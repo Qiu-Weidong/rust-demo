@@ -1,3 +1,6 @@
+pub mod stone;
+mod stonemap;
+
 use colored::Colorize;
 
 fn main() {
@@ -15,14 +18,8 @@ fn main() {
     println!("｜{}｜", "俥傌相仕帥仕相傌俥".bright_red());
     println!("　￣￣￣￣￣￣￣￣￣　");
     println!("　１２３４５６７８９　");
-    // let black = "black".black();
-    // let blue = "blue".blue();
-    // let bright_blue = "bright".bright_blue();
-
-    // println!("{}, {}, {}", black, blue, bright_blue);
 }
 /*
-a̲b̲
 unicode符号
 １２３４５６７８９０
 　｜＋＿－￣
