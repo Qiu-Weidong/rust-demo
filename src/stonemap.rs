@@ -16,11 +16,11 @@ pub struct StoneMap {
     stone_map: [[Option<Stone>; 9]; 10],
     up_stones: [StoneIndex; 16],
     down_stones: [StoneIndex; 16],
-    turn: Camp
+    turn: Camp,
 }
 
-use StoneIndex::Alive;
 use crate::step::Step;
+use StoneIndex::Alive;
 
 impl StoneMap {
     // public
@@ -131,7 +131,7 @@ impl StoneMap {
                 Alive(0, 0),
                 Alive(0, 0),
             ],
-            turn: Camp::Down
+            turn: Camp::Down,
         };
     }
 
@@ -158,46 +158,45 @@ impl StoneMap {
         todo!()
     }
     // private
-    fn is_king_meeted() -> bool {
+    fn is_king_meeted(&mut self) -> bool {
         true
     }
-    fn can_king_move(step: &Step) -> bool {
+    fn can_king_move(&mut self, step: &Step) -> bool {
         todo!()
-    } 
-    fn can_mandarin_move(step: &Step) -> bool {
+    }
+    fn can_mandarin_move(&mut self, step: &Step) -> bool {
         todo!()
-    } 
-    fn can_bishop_move(step: &Step) -> bool {
+    }
+    fn can_bishop_move(&mut self, step: &Step) -> bool {
         todo!()
-    } 
-    fn can_knight_move(step: &Step) -> bool {
+    }
+    fn can_knight_move(&mut self, step: &Step) -> bool {
         todo!()
-    } 
-    fn can_rook_move(step: &Step) -> bool {
+    }
+    fn can_rook_move(&mut self, step: &Step) -> bool {
         todo!()
-    } 
-    fn can_cannon_move(step: &Step) -> bool {
+    }
+    fn can_cannon_move(&mut self, step: &Step) -> bool {
         todo!()
-    } 
-    fn can_pawn_move(step: &Step) -> bool {
-        todo!()
-    } 
-
-    // 走法生成器
-    fn generate_stone_steps(stone: &mut Stone) -> Vec<Step> {
+    }
+    fn can_pawn_move(&mut self, step: &Step) -> bool {
         todo!()
     }
 
+    // 走法生成器
+    fn generate_possible_steps(&mut self) -> Vec<Step> {
+        todo!()
+    }
 }
 
 // 輸出棋盤
 impl Display for StoneMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "　１２３４５６７８９　").unwrap();
-        writeln!(f, "　＿＿＿＿＿＿＿＿＿　").unwrap();
+        writeln!(f, "　１２３４５６７８９　")?;
+        writeln!(f, "　＿＿＿＿＿＿＿＿＿　")?;
 
         for i in 0..10 {
-            write!(f, "｜").unwrap();
+            write!(f, "｜")?;
             for j in 0..9 {
                 if let Some(stone) = self.stone_map[i][j] {
                     (match stone.stone_type {
@@ -229,18 +228,19 @@ impl Display for StoneMap {
                             Camp::Up => write!(f, "{}", "卒".bright_white()),
                             Camp::Down => write!(f, "{}", "兵".bright_red()),
                         },
-                    }).unwrap();
+                    })
+                    .unwrap();
                 } else {
                     // 输出一个空格
                     let c = if i == 4 || i == 5 { '－' } else { '　' };
                     write!(f, "{}", c).unwrap();
                 }
             }
-            writeln!(f, "｜").unwrap();
+            writeln!(f, "｜")?;
         }
 
-        writeln!(f, "　￣￣￣￣￣￣￣￣￣　").unwrap();
-        writeln!(f, "　１２３４５６７８９　").unwrap();
+        writeln!(f, "　￣￣￣￣￣￣￣￣￣　")?;
+        writeln!(f, "　１２３４５６７８９　")?;
 
         Ok(())
     }
