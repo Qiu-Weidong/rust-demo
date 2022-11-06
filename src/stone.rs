@@ -16,12 +16,12 @@ pub enum Camp {
 
 #[derive(Clone, Copy)]
 pub struct Stone {
-    stone_type: StoneType,
-    camp: Camp,
+    pub stone_type: StoneType,
+    pub camp: Camp,
 }
 
 impl Stone {
-    fn new(stone_type: StoneType, camp:Camp) -> Self {
+    pub fn new(stone_type: StoneType, camp:Camp) -> Self {
         Stone { stone_type, camp }
     }
 }
