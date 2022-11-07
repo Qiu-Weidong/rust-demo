@@ -1,137 +1,92 @@
 use colored::Colorize;
 use std::fmt::Display;
 
-use crate::stone::Camp;
+use crate::stone::Camp::{self, Down, Up};
 use crate::stone::Stone;
-use crate::stone::StoneType;
+use crate::stone::StoneType::{self, Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
 
-// #[derive(Clone, Copy)]
-// enum StoneIndex {
-//     Alive(usize, usize),
-//     Dead(usize, usize),
-// }
+#[derive(Clone, Copy)]
+enum StoneIndex {
+    Alive(usize, usize),
+    Dead(usize, usize),
+}
 
 #[derive(Clone)]
 pub struct StoneMap {
     stone_map: [[Option<Stone>; 9]; 10],
-    // up_stones: [StoneIndex; 16],
-    // down_stones: [StoneIndex; 16],
-    turn: Camp
+    up_stones: [StoneIndex; 16],
+    down_stones: [StoneIndex; 16],
+    turn: Camp,
 }
 
-// use StoneIndex::Alive;
 use crate::step::Step;
+use StoneIndex::Alive;
 
 impl StoneMap {
     // public
     pub fn new() -> Self {
-        // 定义一下32个棋子
-        let king_up = Some(Stone::new(StoneType::King, Camp::Up));
-        let king_down = Some(Stone::new(StoneType::King, Camp::Down));
+        // 16个上方棋子
+        let mut stone_map: [[Option<Stone>; 9]; 10] = [[None; 9]; 10];
+        let up_stones = [
+            Alive(0, 0),
+            Alive(0, 1),
+            Alive(0, 2),
+            Alive(0, 3),
+            Alive(0, 4),
+            Alive(0, 5),
+            Alive(0, 6),
+            Alive(0, 7),
+            Alive(0, 8),
+            Alive(3, 8),
+            Alive(2, 7),
+            Alive(3, 6),
+            Alive(3, 4),
+            Alive(3, 2),
+            Alive(2, 1),
+            Alive(3, 0),
+        ];
+        let down_stones = [
+            Alive(9, 8),
+            Alive(9, 7),
+            Alive(9, 6),
+            Alive(9, 5),
+            Alive(9, 4),
+            Alive(9, 3),
+            Alive(9, 2),
+            Alive(9, 1),
+            Alive(9, 0),
+            Alive(6, 0),
+            Alive(7, 1),
+            Alive(6, 2),
+            Alive(6, 4),
+            Alive(6, 6),
+            Alive(7, 7),
+            Alive(6, 8),
+        ];
 
-        let mandarin_up = Some(Stone::new(StoneType::Mandarin, Camp::Up));
-        let mandarin_down = Some(Stone::new(StoneType::Mandarin, Camp::Down));
+        let stone_types = [
+            Rook, Knight, Bishop, Mandarin, King, Mandarin, Bishop, Knight, Rook, Pawn, Cannon,
+            Pawn, Pawn, Pawn, Cannon, Pawn,
+        ];
 
-        let bishop_up = Some(Stone::new(StoneType::Bishop, Camp::Up));
-        let bishop_down = Some(Stone::new(StoneType::Bishop, Camp::Down));
+        // 将棋子摆放到棋盘上。
+        for i in 0..stone_types.len() {
+            if let Alive(x, y) = up_stones[i] {
+                stone_map[x][y] = Some(Stone::new(stone_types[i], Up, i));
+            }
+        }
 
-        let knight_up = Some(Stone::new(StoneType::Knight, Camp::Up));
-        let knight_down = Some(Stone::new(StoneType::Knight, Camp::Down));
+        for i in 0..stone_types.len() {
+            if let Alive(x, y) = down_stones[i] {
+                stone_map[x][y] = Some(Stone::new(stone_types[i], Down, i));
+            }
+        }
 
-        let rook_up = Some(Stone::new(StoneType::Rook, Camp::Up));
-        let rook_down = Some(Stone::new(StoneType::Rook, Camp::Down));
-
-        let cannon_up = Some(Stone::new(StoneType::Cannon, Camp::Up));
-        let cannon_down = Some(Stone::new(StoneType::Cannon, Camp::Down));
-
-        let pawn_up = Some(Stone::new(StoneType::Pawn, Camp::Up));
-        let pawn_down = Some(Stone::new(StoneType::Pawn, Camp::Down));
         return StoneMap {
-            stone_map: [
-                [
-                    rook_up,
-                    knight_up,
-                    bishop_up,
-                    mandarin_up,
-                    king_up,
-                    mandarin_up,
-                    bishop_up,
-                    knight_up,
-                    rook_up,
-                ],
-                [None; 9],
-                [
-                    None, cannon_up, None, None, None, None, None, cannon_up, None,
-                ],
-                [
-                    pawn_up, None, pawn_up, None, pawn_up, None, pawn_up, None, pawn_up,
-                ],
-                [None; 9],
-                [None; 9],
-                [
-                    pawn_down, None, pawn_down, None, pawn_down, None, pawn_down, None, pawn_down,
-                ],
-                [
-                    None,
-                    cannon_down,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    cannon_down,
-                    None,
-                ],
-                [None; 9],
-                [
-                    rook_down,
-                    knight_down,
-                    bishop_down,
-                    mandarin_down,
-                    king_down,
-                    mandarin_down,
-                    bishop_down,
-                    knight_down,
-                    rook_down,
-                ],
-            ],
-            // up_stones: [
-            //     Alive(0, 0),
-            //     Alive(0, 1),
-            //     Alive(0, 2),
-            //     Alive(0, 3),
-            //     Alive(0, 4),
-            //     Alive(0, 5),
-            //     Alive(0, 6),
-            //     Alive(0, 7),
-            //     Alive(0, 8),
-            //     Alive(3, 8),
-            //     Alive(2, 7),
-            //     Alive(3, 6),
-            //     Alive(3, 4),
-            //     Alive(3, 2),
-            //     Alive(2, 1),
-            //     Alive(3, 0),
-            // ],
-            // down_stones: [
-            //     Alive(6, 0),
-            //     Alive(7, 1),
-            //     Alive(6, 2),
-            //     Alive(6, 4),
-            //     Alive(6, 6),
-            //     Alive(7, 7),
-            //     Alive(6, 8),
-            //     Alive(9, 8),
-            //     Alive(9, 7),
-            //     Alive(9, 6),
-            //     Alive(9, 5),
-            //     Alive(9, 4),
-            //     Alive(9, 3),
-            //     Alive(9, 2),
-            //     Alive(9, 1),
-            //     Alive(9, 0),
-            // ],
-            turn: Camp::Down
+            stone_map,
+            up_stones,
+            down_stones,
+            turn: Camp::Down,
         };
     }
 
@@ -165,7 +120,7 @@ impl StoneMap {
     pub fn can_move(&mut self, step: &Step) {
         todo!()
     }
-    
+
     // 走法生成器
     pub fn generate_stone_steps(&mut self) -> Vec<Step> {
         todo!()
@@ -176,28 +131,25 @@ impl StoneMap {
     }
     fn can_king_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
+    }
     fn can_mandarin_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
+    }
     fn can_bishop_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
+    }
     fn can_knight_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
+    }
     fn can_rook_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
+    }
     fn can_cannon_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
+    }
     fn can_pawn_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
-    } 
-
-    
-
+    }
 }
 
 // 輸出棋盤
@@ -239,7 +191,8 @@ impl Display for StoneMap {
                             Camp::Up => write!(f, "{}", "卒".bright_white()),
                             Camp::Down => write!(f, "{}", "兵".bright_red()),
                         },
-                    }).unwrap();
+                    })
+                    .unwrap();
                 } else {
                     // 输出一个空格
                     let c = if i == 4 || i == 5 { '－' } else { '　' };
@@ -250,7 +203,7 @@ impl Display for StoneMap {
         }
 
         writeln!(f, "　￣￣￣￣￣￣￣￣￣　").unwrap();
-        writeln!(f, "　１２３４５６７８９　").unwrap();
+        writeln!(f, "　９８７６５４３２１　").unwrap();
 
         Ok(())
     }
