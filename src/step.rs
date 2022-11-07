@@ -4,13 +4,13 @@ use crate::stone::Stone;
 
 #[derive(Clone, Copy)]
 pub struct Step {
-    from: (i32, i32),
-    to: (i32, i32),
-    killed: Option<Stone>,
+    pub from: (usize, usize),
+    pub to: (usize, usize),
+    pub killed: Option<Stone>,
 }
 
 impl Step {
-    pub fn new(from: (i32, i32), to: (i32, i32), killed: Option<Stone>) -> Self {
+    pub fn new(from: (usize, usize), to: (usize, usize), killed: Option<Stone>) -> Self {
         Step { from, to, killed }
     }
 }

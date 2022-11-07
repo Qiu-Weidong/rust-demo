@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum StoneType {
     King,
     Mandarin,
@@ -8,13 +8,13 @@ pub enum StoneType {
     Cannon,
     Pawn,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum Camp {
     Up,
     Down,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Stone {
     pub stone_type: StoneType,
     pub camp: Camp,

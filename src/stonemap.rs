@@ -5,21 +5,21 @@ use crate::stone::Camp;
 use crate::stone::Stone;
 use crate::stone::StoneType;
 
-#[derive(Clone, Copy)]
-enum StoneIndex {
-    Alive(i32, i32),
-    Dead(i32, i32),
-}
+// #[derive(Clone, Copy)]
+// enum StoneIndex {
+//     Alive(usize, usize),
+//     Dead(usize, usize),
+// }
 
 #[derive(Clone)]
 pub struct StoneMap {
     stone_map: [[Option<Stone>; 9]; 10],
-    up_stones: [StoneIndex; 16],
-    down_stones: [StoneIndex; 16],
+    // up_stones: [StoneIndex; 16],
+    // down_stones: [StoneIndex; 16],
     turn: Camp
 }
 
-use StoneIndex::Alive;
+// use StoneIndex::Alive;
 use crate::step::Step;
 
 impl StoneMap {
@@ -95,42 +95,42 @@ impl StoneMap {
                     rook_down,
                 ],
             ],
-            up_stones: [
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-            ],
-            down_stones: [
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-                Alive(0, 0),
-            ],
+            // up_stones: [
+            //     Alive(0, 0),
+            //     Alive(0, 1),
+            //     Alive(0, 2),
+            //     Alive(0, 3),
+            //     Alive(0, 4),
+            //     Alive(0, 5),
+            //     Alive(0, 6),
+            //     Alive(0, 7),
+            //     Alive(0, 8),
+            //     Alive(3, 8),
+            //     Alive(2, 7),
+            //     Alive(3, 6),
+            //     Alive(3, 4),
+            //     Alive(3, 2),
+            //     Alive(2, 1),
+            //     Alive(3, 0),
+            // ],
+            // down_stones: [
+            //     Alive(6, 0),
+            //     Alive(7, 1),
+            //     Alive(6, 2),
+            //     Alive(6, 4),
+            //     Alive(6, 6),
+            //     Alive(7, 7),
+            //     Alive(6, 8),
+            //     Alive(9, 8),
+            //     Alive(9, 7),
+            //     Alive(9, 6),
+            //     Alive(9, 5),
+            //     Alive(9, 4),
+            //     Alive(9, 3),
+            //     Alive(9, 2),
+            //     Alive(9, 1),
+            //     Alive(9, 0),
+            // ],
             turn: Camp::Down
         };
     }
@@ -147,46 +147,56 @@ impl StoneMap {
     }
 
     pub fn make_move(&mut self, step: &Step) {
-        todo!()
+        let mover = self.stone_map[step.from.0][step.from.1];
+        assert!(mover != None);
+        assert!(self.stone_map[step.to.0][step.to.1] == step.killed);
+        self.stone_map[step.from.0][step.from.1] = None;
+        self.stone_map[step.to.0][step.to.1] = mover;
     }
 
     pub fn revoke_move(&mut self, step: &Step) {
-        todo!()
+        let mover = self.stone_map[step.to.0][step.to.1];
+        assert!(mover != None);
+        assert!(self.stone_map[step.from.0][step.from.1] == None);
+        self.stone_map[step.from.0][step.from.1] = mover;
+        self.stone_map[step.to.0][step.to.1] = step.killed;
     }
 
     pub fn can_move(&mut self, step: &Step) {
         todo!()
     }
+    
+    // 走法生成器
+    pub fn generate_stone_steps(&mut self) -> Vec<Step> {
+        todo!()
+    }
     // private
-    fn is_king_meeted() -> bool {
+    fn is_king_meeted(&mut self) -> bool {
         true
     }
-    fn can_king_move(step: &Step) -> bool {
+    fn can_king_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
-    fn can_mandarin_move(step: &Step) -> bool {
+    fn can_mandarin_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
-    fn can_bishop_move(step: &Step) -> bool {
+    fn can_bishop_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
-    fn can_knight_move(step: &Step) -> bool {
+    fn can_knight_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
-    fn can_rook_move(step: &Step) -> bool {
+    fn can_rook_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
-    fn can_cannon_move(step: &Step) -> bool {
+    fn can_cannon_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
-    fn can_pawn_move(step: &Step) -> bool {
+    fn can_pawn_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
     } 
 
-    // 走法生成器
-    fn generate_stone_steps(stone: &mut Stone) -> Vec<Step> {
-        todo!()
-    }
+    
 
 }
 
