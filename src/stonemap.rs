@@ -155,11 +155,11 @@ impl StoneMap {
 // 輸出棋盤
 impl Display for StoneMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "　１２３４５６７８９　").unwrap();
-        writeln!(f, "　＿＿＿＿＿＿＿＿＿　").unwrap();
+        writeln!(f, "　１２３４５６７８９　")?;
+        writeln!(f, "　＿＿＿＿＿＿＿＿＿　")?;
 
         for i in 0..10 {
-            write!(f, "｜").unwrap();
+            write!(f, "｜")?;
             for j in 0..9 {
                 if let Some(stone) = self.stone_map[i][j] {
                     (match stone.stone_type {
@@ -199,7 +199,7 @@ impl Display for StoneMap {
                     write!(f, "{}", c).unwrap();
                 }
             }
-            writeln!(f, "｜").unwrap();
+            writeln!(f, "｜")?;
         }
 
         writeln!(f, "　￣￣￣￣￣￣￣￣￣　").unwrap();
