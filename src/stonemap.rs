@@ -202,18 +202,19 @@ impl StoneMap {
         // 首先转换为 字符数组
         let chars: Vec<char> = input.trim().chars().collect();
         if chars.len() < 4 || chars.len() > 5 {
+            // 可能有五个字，如前兵九平八
             return Err(String::from("无法解析输入走步，请输入四字或五字的走步"));
         }
 
         match chars[0] {
-            '将' | '帅' | '將' | '帥' | '王' => todo!(),
-            '士' | '仕' => todo!(),
-            '象' | '相' => todo!(),
-            '馬' | '傌' | '马' | '㐷' => todo!(),
-            '车' | '伡' | '車' | '俥' => todo!(),
-            '炮' | '砲' => todo!(),
-            '兵' | '卒' => todo!(),
-            '前' | '后' | '後' | '二' | '三' | '四' => todo!(),
+            '将' | '帅' | '將' | '帥' | '王' => self.parse_king_step(&chars),
+            '士' | '仕' => self.parse_mandarin_step(&chars),
+            '象' | '相' => self.parse_bishop_step(&chars),
+            '馬' | '傌' | '马' | '㐷' => self.parse_knight_step(&chars),
+            '车' | '伡' | '車' | '俥' => self.parse_rook_step(&chars),
+            '炮' | '砲' => self.parse_cannon_step(&chars),
+            '兵' | '卒' => self.parse_pawn_step(&chars),
+            '前' | '后' | '後' | '二' | '三' | '四' => self.parse_same_line_step(&chars),
             _ => todo!()
         }
     }
@@ -361,6 +362,31 @@ impl StoneMap {
                 }
             }
         }
+    }
+
+    fn parse_king_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_mandarin_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_bishop_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_knight_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_rook_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_cannon_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_pawn_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
+    }
+    fn parse_same_line_step(&mut self, input: &[char]) -> Result<Step, String> {
+        todo!()
     }
 }
 
