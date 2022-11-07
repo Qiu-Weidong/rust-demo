@@ -5,10 +5,19 @@ use crate::stone::Camp::{self, Down, Up};
 use crate::stone::Stone;
 use crate::stone::StoneType::{self, Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum StoneIndex {
     Alive(usize, usize),
-    Dead(usize, usize),
+    Dead,
+}
+
+impl StoneIndex {
+    fn get(&self) -> (usize, usize) {
+        match self {
+            Alive(x, y) => (*x, *y),
+            StoneIndex::Dead => panic!("the stone id dead!"),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -107,6 +116,20 @@ impl StoneMap {
         assert!(self.stone_map[step.to.0][step.to.1] == step.killed);
         self.stone_map[step.from.0][step.from.1] = None;
         self.stone_map[step.to.0][step.to.1] = mover;
+
+        let mover = mover.unwrap();
+
+        match mover.camp {
+            Up => self.up_stones[mover.id] = Alive(step.to.0, step.to.1),
+            Down => self.down_stones[mover.id] = Alive(step.to.0, step.to.1),
+        }
+
+        if let Some(killed) = step.killed {
+            match killed.camp {
+                Up => self.up_stones[killed.id] = StoneIndex::Dead,
+                Down => self.down_stones[killed.id] = StoneIndex::Dead,
+            }
+        }
     }
 
     pub fn revoke_move(&mut self, step: &Step) {
@@ -115,34 +138,157 @@ impl StoneMap {
         assert!(self.stone_map[step.from.0][step.from.1] == None);
         self.stone_map[step.from.0][step.from.1] = mover;
         self.stone_map[step.to.0][step.to.1] = step.killed;
+
+        let mover = mover.unwrap();
+        match mover.camp {
+            Up => self.up_stones[mover.id] = Alive(step.from.0, step.from.1),
+            Down => self.down_stones[mover.id] = Alive(step.from.0, step.from.1),
+        }
+
+        if let Some(killed) = step.killed {
+            match killed.camp {
+                Up => self.up_stones[killed.id] = Alive(step.to.0, step.to.1),
+                Down => self.down_stones[killed.id] = Alive(step.to.0, step.to.1),
+            }
+        }
     }
 
-    pub fn can_move(&mut self, step: &Step) {
-        todo!()
+    pub fn can_move(&mut self, step: &Step) -> bool {
+        if step.from.1 > 9
+            || step.from.1 > 8
+            || step.to.0 > 9
+            || step.to.1 > 8
+            || step.from.0 == step.to.0 && step.from.1 == step.to.1
+        {
+            return false;
+        }
+        let mover = self.stone_map[step.to.0][step.to.1];
+        if mover == None {
+            return false;
+        }
+
+        let mover = mover.unwrap();
+        if let Some(killed) = step.killed {
+            if killed.camp == mover.camp {
+                return false;
+            }
+        }
+
+        let mut ret = match mover.stone_type {
+            King => self.can_king_move(step.from, step.to),
+            Mandarin => self.can_mandarin_move(step.from, step.to),
+            Bishop => self.can_bishop_move(step.from, step.to),
+            Knight => self.can_knight_move(step.from, step.to),
+            Rook => self.can_rook_move(step.from, step.to),
+            Cannon => self.can_cannon_move(step.from, step.to),
+            Pawn => self.can_pawn_move(step.from, step.to),
+        };
+        if !ret {
+            return ret;
+        }
+
+        self.make_move(step);
+        ret = !self.is_king_meeted();
+        self.revoke_move(step);
+        ret
     }
 
     // 走法生成器
     pub fn generate_stone_steps(&mut self) -> Vec<Step> {
         todo!()
     }
+    
+    pub fn parse_step(&mut self, input: &str) -> Step {
+        todo!()
+    }
     // private
     fn is_king_meeted(&mut self) -> bool {
+        // 如果有一个王死了，那么必然不会碰面
+        if self.up_stones[4] == StoneIndex::Dead || self.down_stones[4] == StoneIndex::Dead {
+            return false;
+        }
+
+        // 首先找到两个王
+        let up_king = self.up_stones[4].get();
+        let down_king = self.down_stones[4].get();
+
+        // 不在一条竖线上
+        if up_king.1 != down_king.1 {
+            return false;
+        }
+        let y = up_king.1;
+        for x in (up_king.0 + 1)..down_king.0 {
+            if let Some(_) = self.stone_map[x][y] {
+                return false;
+            }
+        }
+
         true
     }
     fn can_king_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
-        todo!()
+        if to.1 < 3 || to.1 > 5 || from.0 < 3 && to.0 > 2 || from.0 >= 7 && to.0 < 7 {
+            return false;
+        }
+        (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) == 1
     }
     fn can_mandarin_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
-        todo!()
+        if to.1 < 3 || to.1 > 5 || from.0 < 3 && to.0 > 2 || from.0 >= 7 && to.0 < 7 {
+            return false;
+        }
+        (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) == 2
     }
     fn can_bishop_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
-        todo!()
+        if from.0 <= 4 && to.0 > 4 || from.0 >= 5 && to.0 < 5 
+            || (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) != 8
+        {
+            return false;
+        }
+        let cx = (from.0 + to.0) >> 1;
+        let cy = (from.1 + to.1) >> 1; 
+        self.stone_map[cx][cy] == None
     }
     fn can_knight_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
-        todo!()
+        if (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) != 5 {
+            return false;
+        }
+        else if (from.0 - to.0) * (from.0 - to.0) == 1 {
+            // 沿着纵向跳了一步，横向跳了两步
+            let cx = from.0 ;
+            let cy = (from.1 + to.1) >> 1;
+            return self.stone_map[cx][cy] == None;
+        }
+        else {
+            let cx = (from.0 + to.0) >> 1;
+            let cy = from.1;
+            return self.stone_map[cx][cy] == None;
+        }
     }
     fn can_rook_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
-        todo!()
+        if from.0 == to.0 {
+            // 横着走
+            let miny = if from.1 < to.1 { from.1 } else { to.1 };
+            let maxy =  if from.1 < to.1 { to.1 } else { from.1 };
+            let x = from.0;
+            for y in (miny+1)..(maxy) {
+                if let Some(_) = self.stone_map[x][y] {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else if from.1 == to.1 {
+            // 竖着走
+            let minx = if from.0 < to.0 { from.0 } else { to.0 };
+            let maxx =  if from.0 < to.0 { to.0 } else { from.0 };
+            let y = from.1;
+            for x in (minx+1)..(maxx) {
+                if let Some(_) = self.stone_map[x][y] {
+                    return false;
+                }
+            }
+            return true;
+        }
+        false
     }
     fn can_cannon_move(&mut self, from: (usize, usize), to: (usize, usize)) -> bool {
         todo!()
@@ -191,19 +337,18 @@ impl Display for StoneMap {
                             Camp::Up => write!(f, "{}", "卒".bright_white()),
                             Camp::Down => write!(f, "{}", "兵".bright_red()),
                         },
-                    })
-                    .unwrap();
+                    })?;
                 } else {
                     // 输出一个空格
                     let c = if i == 4 || i == 5 { '－' } else { '　' };
-                    write!(f, "{}", c).unwrap();
+                    write!(f, "{}", c)?;
                 }
             }
             writeln!(f, "｜")?;
         }
 
-        writeln!(f, "　￣￣￣￣￣￣￣￣￣　").unwrap();
-        writeln!(f, "　９８７６５４３２１　").unwrap();
+        writeln!(f, "　￣￣￣￣￣￣￣￣￣　")?;
+        writeln!(f, "　９８７６５４３２１　")?;
 
         Ok(())
     }
