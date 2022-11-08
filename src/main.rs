@@ -12,22 +12,24 @@ fn main() {
     let mut input = String::new();
 
     loop {
+        print!("{}", stone_map);
         
-        
-        // 
-        println!("请输入指令>");
         input.clear();
         std::io::stdin().read_line(&mut input).expect("读取字符串失败");
+        let input_str = input.trim();
         // 解析是否是相关操作命令
+        match input_str as &str {
+            "quit" => break,  
+            _ => {}
+        };
 
-        match stone_map.parse_step(input.trim()) {
+        match stone_map.parse_step(input_str) {
             Ok(step) => {
                 stone_map.make_move(&step);
                 stone_map.switch_turn();
             },
             Err(msg) => { print!("{}\n", msg);  }
         }
-        println!("{}", stone_map);
         
     }
     

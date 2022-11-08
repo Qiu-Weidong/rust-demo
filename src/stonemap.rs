@@ -196,7 +196,7 @@ impl StoneMap {
         let chars: Vec<char> = input.trim().chars().collect();
         if chars.len() < 4 || chars.len() > 5 {
             // 可能有五个字，如前兵九平八
-            return Err(String::from("无法解析输入走步，请输入四字或五字的走步"));
+            return Err(String::from("输入字符串过长或过短."));
         }
 
         match chars[0] {
@@ -207,8 +207,8 @@ impl StoneMap {
             '士' | '仕' => self.parse_mandarin_step(&chars),
             '象' | '相' => self.parse_bishop_step(&chars),
             '馬' | '傌' | '马' | '㐷' => self.parse_knight_step(&chars),
-            '前' | '后' | '後' | '二' | '三' | '四' => self.parse_same_line_step(&chars),
-            _ => todo!(),
+            '前' | '后' | '後' | '中' | '二' | '三' | '四' => self.parse_same_line_step(&chars),
+            _ => Err(format!("未知字符: {}", chars[0])),
         }
     }
     // private
@@ -369,7 +369,7 @@ impl StoneMap {
             '车' | '伡' | '車' | '俥' => self.get_location(Rook, line)?,
             '炮' | '砲' => self.get_location(Cannon, line)?,
             '兵' | '卒' => self.get_location(Pawn, line)?,
-            _ => return Err(String::from("错误")),
+            _ => return Err(format!("棋子 `{}` 不能走直线", input[0])),
         };
 
         let step = match input[2] {
@@ -382,7 +382,7 @@ impl StoneMap {
                 Down => self.make_step((x, y), (x + dest, y)),
             },
             '平' => self.make_step((x, y), (x, line_2)),
-            _ => return Err(String::from("非法操作")),
+            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
         };
 
         if !self.can_move(&step) {
@@ -413,7 +413,7 @@ impl StoneMap {
                 Up => self.make_step((x, y), (x - 1, dest)),
                 Down => self.make_step((x, y), (x + 1, dest)),
             },
-            _ => return Err(String::from("非法操作")),
+            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
         };
 
         if !self.can_move(&step) {
@@ -430,7 +430,7 @@ impl StoneMap {
         let (x, y) = self.get_location(Bishop, line)?;
 
         if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 4 {
-            return Err(String::from("象只能飞田形"));
+            return Err(String::from("输入相的走步非法"));
         }
         let step = match input[2] {
             '進' | '进' => match self.turn {
@@ -441,7 +441,7 @@ impl StoneMap {
                 Up => self.make_step((x, y), (x - 2, dest)),
                 Down => self.make_step((x, y), (x + 2, dest)),
             } ,
-            _ => return Err(String::from("非法操作")),
+            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
         };
         if !self.can_move(&step) {
             Err(String::from("非法走步"))
@@ -456,9 +456,8 @@ impl StoneMap {
         let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
         let (x, y) = self.get_location(Knight, line)?;
 
-        println!("line: {}, dest: {}, x: {}, y: {}", line, dest, x, y);
         if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 4 && (y as i32 - dest as i32) * (y as i32 - dest as i32) != 1 {
-            return Err(String::from("马只能走日"));
+            return Err(String::from("输入马的走步非法."));
         }
         let gap = if (y as i32 - dest as i32) * (y as i32 - dest as i32) == 4 { 1 } else { 2 };
         let step = match input[2] {
@@ -470,7 +469,7 @@ impl StoneMap {
                 Up => self.make_step((x, y), (x - gap, dest)),
                 Down => self.make_step((x, y), (x + gap, dest)),
             } ,
-            _ => return Err(String::from("非法操作")),
+            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
         };
 
         if !self.can_move(&step) {
@@ -489,6 +488,17 @@ impl StoneMap {
         self.parse_straight_step(input)
     }
     fn parse_same_line_step(&mut self, _input: &[char]) -> Result<Step, String> {
+        match _input[1] {
+            '车' | '伡' | '車' | '俥' => todo!(),
+            '馬' | '傌' | '马' | '㐷' => todo!(),
+            '象' | '相' => todo!(),
+            '士' | '仕' => todo!(),
+            '炮' | '砲' => todo!(),
+            '兵' | '卒' => todo!(),
+            _ => todo!()
+        };
+        
+        
         todo!()
     }
     // 一个辅助函数
@@ -503,7 +513,7 @@ impl StoneMap {
             '七' | '柒' | '7' | '７' => Ok(7),
             '八' | '捌' | '8' | '８' => Ok(8),
             '九' | '玖' | '9' | '９' => Ok(9),
-            _ => Err(String::from("无法解析数字")),
+            _ => Err(format!("无法将字符 `{}` 解析为数字.", c)),
         }
     }
     fn make_step(&self, from: (usize, usize), to: (usize, usize)) -> Step {
@@ -528,7 +538,7 @@ impl StoneMap {
                     }
                 }
             }
-            return Err(format!("无法获取棋子位置! 棋子类型 {:?}, 所在列: {}", ty, line));
+            return Err(format!("棋子 `{:?}` 已经死亡或不在指定位置.", ty));
         };
         match ty {
             King => closure(&[4]),
@@ -594,6 +604,10 @@ impl Display for StoneMap {
         writeln!(f, "　￣￣￣￣￣￣￣￣￣　")?;
         writeln!(f, "　９８７６５４３２１　")?;
 
+        writeln!(f, "轮到{}", match self.turn {
+            Up => "黑方".bright_white(),
+            Down => "红方".red(),
+        } )?;
         Ok(())
     }
 }
