@@ -14,17 +14,21 @@ fn main() {
     loop {
         
         
-        println!("{}", stone_map);
+        // 
+        println!("请输入指令>");
         input.clear();
         std::io::stdin().read_line(&mut input).expect("读取字符串失败");
+        // 解析是否是相关操作命令
 
         match stone_map.parse_step(input.trim()) {
             Ok(step) => {
                 stone_map.make_move(&step);
                 stone_map.switch_turn();
             },
-            Err(msg) => { println!("{}", msg); continue; }
+            Err(msg) => { print!("{}\n", msg);  }
         }
+        println!("{}", stone_map);
+        
     }
     
 

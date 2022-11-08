@@ -258,7 +258,7 @@ impl StoneMap {
         self.stone_map[cx][cy] == None
     }
     fn can_knight_move(&mut self, from: (usize, usize), to: (usize, usize), _camp: Camp) -> bool {
-        if (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) != 5 {
+        if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 5 {
             return false;
         } else if (from.0 - to.0) * (from.0 - to.0) == 1 {
             // 沿着纵向跳了一步，横向跳了两步
@@ -360,6 +360,10 @@ impl StoneMap {
         let line = StoneMap::char_to_number(input[1])?;
         let dest = StoneMap::char_to_number(input[3])?;
 
+        // 对于line和dest要切换一下
+        let line = if self.turn == Down { 9 - line } else { line - 1 };
+        let line_2 = if self.turn == Down { 9- dest } else { dest - 1 }; // 用于 平 
+
         let (x, y) = match input[0] {
             '将' | '帅' | '將' | '帥' | '王' => self.get_location(King, line)?,
             '车' | '伡' | '車' | '俥' => self.get_location(Rook, line)?,
@@ -369,9 +373,15 @@ impl StoneMap {
         };
 
         let step = match input[2] {
-            '進' | '进' => self.make_step((x, y), (x + dest, y)),
-            '退' => self.make_step((x, y), (x - dest, y)),
-            '平' => self.make_step((x, y), (x, dest)),
+            '進' | '进' => match self.turn {
+                Up => self.make_step((x, y), (x + dest, y)),
+                Down => self.make_step((x, y), (x - dest, y)),
+            } ,
+            '退' => match self.turn {
+                Up => self.make_step((x, y), (x - dest, y)),
+                Down => self.make_step((x, y), (x + dest, y)),
+            },
+            '平' => self.make_step((x, y), (x, line_2)),
             _ => return Err(String::from("非法操作")),
         };
 
@@ -387,14 +397,22 @@ impl StoneMap {
     fn parse_mandarin_step(&mut self, input: &[char]) -> Result<Step, String> {
         let line = StoneMap::char_to_number(input[1])?;
         let dest = StoneMap::char_to_number(input[3])?;
+        let line = if self.turn == Down { 9 - line } else { line - 1 };
+        let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
         let (x, y) = self.get_location(Mandarin, line)?;
 
-        if (y - line) * (y - line) != 1 {
+        if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 1 {
             return Err(String::from("士只能走斜角"));
         }
         let step = match input[2] {
-            '進' | '进' => self.make_step((x, y), (x + 1, dest)),
-            '退' => self.make_step((x, y), (x - 1, dest)),
+            '進' | '进' => match self.turn {
+                Up => self.make_step((x, y), (x + 1, dest)),
+                Down => self.make_step((x, y), (x - 1, dest)),
+            } ,
+            '退' => match self.turn {
+                Up => self.make_step((x, y), (x - 1, dest)),
+                Down => self.make_step((x, y), (x + 1, dest)),
+            },
             _ => return Err(String::from("非法操作")),
         };
 
@@ -407,14 +425,22 @@ impl StoneMap {
     fn parse_bishop_step(&mut self, input: &[char]) -> Result<Step, String> {
         let line = StoneMap::char_to_number(input[1])?;
         let dest = StoneMap::char_to_number(input[3])?;
+        let line = if self.turn == Down { 9 - line } else { line - 1 };
+        let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
         let (x, y) = self.get_location(Bishop, line)?;
 
-        if (y - line) * (y - line) != 4 {
+        if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 4 {
             return Err(String::from("象只能飞田形"));
         }
         let step = match input[2] {
-            '進' | '进' => self.make_step((x, y), (x + 2, dest)),
-            '退' => self.make_step((x, y), (x - 2, dest)),
+            '進' | '进' => match self.turn {
+                Up => self.make_step((x, y), (x + 2, dest)),
+                Down => self.make_step((x, y), (x - 2, dest)),
+            } ,
+            '退' => match self.turn {
+                Up => self.make_step((x, y), (x - 2, dest)),
+                Down => self.make_step((x, y), (x + 2, dest)),
+            } ,
             _ => return Err(String::from("非法操作")),
         };
         if !self.can_move(&step) {
@@ -426,15 +452,24 @@ impl StoneMap {
     fn parse_knight_step(&mut self, input: &[char]) -> Result<Step, String> {
         let line = StoneMap::char_to_number(input[1])?;
         let dest = StoneMap::char_to_number(input[3])?;
+        let line = if self.turn == Down { 9 - line } else { line - 1 };
+        let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
         let (x, y) = self.get_location(Knight, line)?;
 
-        if (y - line) * (y - line) != 4 && (y - line) * (y - line) != 1 {
+        println!("line: {}, dest: {}, x: {}, y: {}", line, dest, x, y);
+        if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 4 && (y as i32 - dest as i32) * (y as i32 - dest as i32) != 1 {
             return Err(String::from("马只能走日"));
         }
-        let gap = if (y - line) * (y - line) == 4 { 1 } else { 2 };
+        let gap = if (y as i32 - dest as i32) * (y as i32 - dest as i32) == 4 { 1 } else { 2 };
         let step = match input[2] {
-            '進' | '进' => self.make_step((x, y), (x + gap, dest)),
-            '退' => self.make_step((x, y), (x - gap, dest)),
+            '進' | '进' => match self.turn {
+                Up => self.make_step((x, y), (x + gap, dest)),
+                Down => self.make_step((x, y), (x - gap, dest)),
+            } ,
+            '退' => match self.turn {
+                Up => self.make_step((x, y), (x - gap, dest)),
+                Down => self.make_step((x, y), (x + gap, dest)),
+            } ,
             _ => return Err(String::from("非法操作")),
         };
 
