@@ -238,18 +238,18 @@ impl StoneMap {
         if to.1 < 3 || to.1 > 5 || camp == Up && to.0 > 2 || camp == Down && to.0 < 7 {
             return false;
         }
-        (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) == 1
+        (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) == 1
     }
     fn can_mandarin_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
         if to.1 < 3 || to.1 > 5 || camp == Up && to.0 > 2 || camp == Down && to.0 < 7 {
             return false;
         }
-        (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) == 2
+        (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) == 2
     }
     fn can_bishop_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
         if camp == Up && to.0 > 4
             || camp == Down && to.0 < 5
-            || (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) != 8
+            || (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 8
         {
             return false;
         }
@@ -260,7 +260,7 @@ impl StoneMap {
     fn can_knight_move(&mut self, from: (usize, usize), to: (usize, usize), _camp: Camp) -> bool {
         if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 5 {
             return false;
-        } else if (from.0 - to.0) * (from.0 - to.0) == 1 {
+        } else if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) == 1 {
             // 沿着纵向跳了一步，横向跳了两步
             let cx = from.0;
             let cy = (from.1 + to.1) >> 1;
@@ -334,7 +334,7 @@ impl StoneMap {
         false
     }
     fn can_pawn_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
-        if (from.0 - to.0) * (from.0 - to.0) + (from.1 - to.1) * (from.1 - to.1) != 1 {
+        if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 1 {
             return false;
         }
 
