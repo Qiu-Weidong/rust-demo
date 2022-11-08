@@ -97,6 +97,7 @@ impl StoneMap {
         }
     }
 
+    #[allow(dead_code)]
     pub fn evaluate(&self) -> i32 {
         todo!()
     }
@@ -184,7 +185,8 @@ impl StoneMap {
         ret
     }
 
-    // 走法生成器
+    
+    #[allow(dead_code)] // 走法生成器
     pub fn generate_stone_steps(&mut self) -> Vec<Step> {
         todo!()
     }
@@ -198,8 +200,10 @@ impl StoneMap {
         }
 
         match chars[0] {
-            '将' | '帅' | '將' | '帥' | '王' | '车' | '伡' | '車' | '俥' | '炮' | '砲' | '兵'
-            | '卒' => self.parse_straight_step(&chars),
+            '将' | '帅' | '將' | '帥' | '王' => self.parse_king_step(&chars),
+            '车' | '伡' | '車' | '俥' => self.parse_rook_step(&chars),
+            '炮' | '砲' => self.parse_cannon_step(&chars),
+            '兵' | '卒' => self.parse_pawn_step(&chars),
             '士' | '仕' => self.parse_mandarin_step(&chars),
             '象' | '相' => self.parse_bishop_step(&chars),
             '馬' | '傌' | '马' | '㐷' => self.parse_knight_step(&chars),
@@ -361,7 +365,7 @@ impl StoneMap {
             '车' | '伡' | '車' | '俥' => self.get_location(Rook, line)?,
             '炮' | '砲' => self.get_location(Cannon, line)?,
             '兵' | '卒' => self.get_location(Pawn, line)?,
-            _ => todo!(),
+            _ => return Err(String::from("错误")),
         };
 
         let step = match input[2] {
@@ -372,39 +376,84 @@ impl StoneMap {
         };
 
         if !self.can_move(&step) {
-            return Err(String::from("_"));
+            Err(String::from("非法走步"))
         } else {
-            return Ok(step);
+            Ok(step)
         }
     }
+    fn parse_king_step(&mut self, input: &[char]) -> Result<Step, String> {
+        self.parse_straight_step(input)
+    }
     fn parse_mandarin_step(&mut self, input: &[char]) -> Result<Step, String> {
-        let line = match StoneMap::char_to_number(input[1]) {
-            Ok(line) => line,
-            Err(_) => return Err(String::from("不是可以解析的数字")),
+        let line = StoneMap::char_to_number(input[1])?;
+        let dest = StoneMap::char_to_number(input[3])?;
+        let (x, y) = self.get_location(Mandarin, line)?;
+
+        if (y - line) * (y - line) != 1 {
+            return Err(String::from("士只能走斜角"));
+        }
+        let step = match input[2] {
+            '進' | '进' => self.make_step((x, y), (x + 1, dest)),
+            '退' => self.make_step((x, y), (x - 1, dest)),
+            _ => return Err(String::from("非法操作")),
         };
 
-        let dest = match StoneMap::char_to_number(input[3]) {
-            Ok(dest) => dest,
-            Err(_) => return Err(String::from("不是可以解析的数字")),
-        };
-        todo!()
+        if !self.can_move(&step) {
+            Err(String::from("非法走步"))
+        } else {
+            Ok(step)
+        }
     }
     fn parse_bishop_step(&mut self, input: &[char]) -> Result<Step, String> {
-        todo!()
+        let line = StoneMap::char_to_number(input[1])?;
+        let dest = StoneMap::char_to_number(input[3])?;
+        let (x, y) = self.get_location(Bishop, line)?;
+
+        if (y - line) * (y - line) != 4 {
+            return Err(String::from("象只能飞田形"));
+        }
+        let step = match input[2] {
+            '進' | '进' => self.make_step((x, y), (x + 2, dest)),
+            '退' => self.make_step((x, y), (x - 2, dest)),
+            _ => return Err(String::from("非法操作")),
+        };
+        if !self.can_move(&step) {
+            Err(String::from("非法走步"))
+        } else {
+            Ok(step)
+        }
     }
     fn parse_knight_step(&mut self, input: &[char]) -> Result<Step, String> {
-        todo!()
+        let line = StoneMap::char_to_number(input[1])?;
+        let dest = StoneMap::char_to_number(input[3])?;
+        let (x, y) = self.get_location(Knight, line)?;
+
+        if (y - line) * (y - line) != 4 && (y - line) * (y - line) != 1 {
+            return Err(String::from("马只能走日"));
+        }
+        let gap = if (y - line) * (y - line) == 4 { 1 } else { 2 };
+        let step = match input[2] {
+            '進' | '进' => self.make_step((x, y), (x + gap, dest)),
+            '退' => self.make_step((x, y), (x - gap, dest)),
+            _ => return Err(String::from("非法操作")),
+        };
+
+        if !self.can_move(&step) {
+            Err(String::from("非法走步"))
+        } else {
+            Ok(step)
+        }
     }
     fn parse_rook_step(&mut self, input: &[char]) -> Result<Step, String> {
-        todo!()
+        self.parse_straight_step(input)
     }
     fn parse_cannon_step(&mut self, input: &[char]) -> Result<Step, String> {
-        todo!()
+        self.parse_straight_step(input)
     }
     fn parse_pawn_step(&mut self, input: &[char]) -> Result<Step, String> {
-        todo!()
+        self.parse_straight_step(input)
     }
-    fn parse_same_line_step(&mut self, input: &[char]) -> Result<Step, String> {
+    fn parse_same_line_step(&mut self, _input: &[char]) -> Result<Step, String> {
         todo!()
     }
     // 一个辅助函数
@@ -436,7 +485,7 @@ impl StoneMap {
             &self.down_stones
         };
 
-        let closure = | list: &[usize] | {
+        let closure = |list: &[usize]| {
             for i in list.iter() {
                 if let Alive(x, y) = stones[*i] {
                     if y == line {
@@ -444,140 +493,16 @@ impl StoneMap {
                     }
                 }
             }
-            return Err(String::from(""));
+            return Err(String::from("获取位置错误"));
         };
         match ty {
-            King => {
-                if let Alive(x, y) = stones[4] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
-            Mandarin => {
-                if let Alive(x, y) = stones[3] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[5] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
-            Bishop => {
-                if let Alive(x, y) = stones[2] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[6] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
-            Knight => {
-                if let Alive(x, y) = stones[1] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[7] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
-            Rook => {
-                if let Alive(x, y) = stones[0] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[8] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
-            Cannon => {
-                if let Alive(x, y) = stones[10] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[14] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
-            Pawn => {
-                if let Alive(x, y) = stones[9] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[11] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[12] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[13] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else if let Alive(x, y) = stones[15] {
-                    if y != line {
-                        Err(String::from("获取位置出错"))
-                    } else {
-                        Ok((x, y))
-                    }
-                } else {
-                    Err(String::from("获取位置出错"))
-                }
-            }
+            King => closure(&[4]),
+            Mandarin => closure(&[3, 5]),
+            Bishop => closure(&[2, 6]),
+            Knight => closure(&[1, 7]),
+            Rook => closure(&[0, 8]),
+            Cannon => closure(&[10, 14]),
+            Pawn => closure(&[9, 11, 12, 13, 15]),
         }
     }
 }

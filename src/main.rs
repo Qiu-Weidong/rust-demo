@@ -2,13 +2,32 @@ pub mod stone;
 mod stonemap;
 pub mod step;
 
-// use colored::Colorize;
 use stonemap::StoneMap;
 
 fn main() {
-    let stone_map = StoneMap::new();
+    let mut stone_map = StoneMap::new();
 
-    println!("{}", stone_map);
+    
+
+    let mut input = String::new();
+
+    loop {
+        
+        
+        println!("{}", stone_map);
+        input.clear();
+        std::io::stdin().read_line(&mut input).expect("读取字符串失败");
+
+        match stone_map.parse_step(input.trim()) {
+            Ok(step) => {
+                stone_map.make_move(&step);
+                stone_map.switch_turn();
+            },
+            Err(msg) => { println!("{}", msg); continue; }
+        }
+    }
+    
+
 }
 /*
 unicode符号
