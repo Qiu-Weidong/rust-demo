@@ -493,7 +493,7 @@ impl StoneMap {
                     }
                 }
             }
-            return Err(String::from("获取位置错误"));
+            return Err(format!("无法获取棋子位置! 棋子类型 {:?}, 所在列: {}", ty, line));
         };
         match ty {
             King => closure(&[4]),
