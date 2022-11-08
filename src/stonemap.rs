@@ -11,15 +11,6 @@ enum StoneIndex {
     Dead,
 }
 
-impl StoneIndex {
-    fn get(&self) -> (usize, usize) {
-        match self {
-            Alive(x, y) => (*x, *y),
-            StoneIndex::Dead => panic!("the stone id dead!"),
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct StoneMap {
     stone_map: [[Option<Stone>; 9]; 10],
@@ -154,7 +145,7 @@ impl StoneMap {
     }
 
     pub fn can_move(&mut self, step: &Step) -> bool {
-        if step.from.1 > 9
+        if step.from.0 > 9
             || step.from.1 > 8
             || step.to.0 > 9
             || step.to.1 > 8
@@ -162,7 +153,7 @@ impl StoneMap {
         {
             return false;
         }
-        let mover = self.stone_map[step.to.0][step.to.1];
+        let mover = self.stone_map[step.from.0][step.from.1];
         if mover == None {
             return false;
         }
@@ -207,40 +198,37 @@ impl StoneMap {
         }
 
         match chars[0] {
-            '将' | '帅' | '將' | '帥' | '王' => self.parse_king_step(&chars),
+            '将' | '帅' | '將' | '帥' | '王' | '车' | '伡' | '車' | '俥' | '炮' | '砲' | '兵'
+            | '卒' => self.parse_straight_step(&chars),
             '士' | '仕' => self.parse_mandarin_step(&chars),
             '象' | '相' => self.parse_bishop_step(&chars),
             '馬' | '傌' | '马' | '㐷' => self.parse_knight_step(&chars),
-            '车' | '伡' | '車' | '俥' => self.parse_rook_step(&chars),
-            '炮' | '砲' => self.parse_cannon_step(&chars),
-            '兵' | '卒' => self.parse_pawn_step(&chars),
             '前' | '后' | '後' | '二' | '三' | '四' => self.parse_same_line_step(&chars),
-            _ => todo!()
+            _ => todo!(),
         }
     }
     // private
     fn is_king_meeted(&mut self) -> bool {
         // 如果有一个王死了，那么必然不会碰面
-        if self.up_stones[4] == StoneIndex::Dead || self.down_stones[4] == StoneIndex::Dead {
-            return false;
-        }
+        if let (Alive(x1, y1), Alive(x2, y2)) = (self.up_stones[4], self.down_stones[4]) {
+            // 首先找到两个王
+            let up_king = (x1, y1);
+            let down_king = (x2, y2);
 
-        // 首先找到两个王
-        let up_king = self.up_stones[4].get();
-        let down_king = self.down_stones[4].get();
-
-        // 不在一条竖线上
-        if up_king.1 != down_king.1 {
-            return false;
-        }
-        let y = up_king.1;
-        for x in (up_king.0 + 1)..down_king.0 {
-            if let Some(_) = self.stone_map[x][y] {
+            // 不在一条竖线上
+            if up_king.1 != down_king.1 {
                 return false;
             }
+            let y = up_king.1;
+            for x in (up_king.0 + 1)..down_king.0 {
+                if let Some(_) = self.stone_map[x][y] {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
         }
-
-        true
     }
     fn can_king_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
         if to.1 < 3 || to.1 > 5 || camp == Up && to.0 > 2 || camp == Down && to.0 < 7 {
@@ -364,10 +352,41 @@ impl StoneMap {
         }
     }
 
-    fn parse_king_step(&mut self, input: &[char]) -> Result<Step, String> {
-        todo!()
+    fn parse_straight_step(&mut self, input: &[char]) -> Result<Step, String> {
+        let line = StoneMap::char_to_number(input[1])?;
+        let dest = StoneMap::char_to_number(input[3])?;
+
+        let (x, y) = match input[0] {
+            '将' | '帅' | '將' | '帥' | '王' => self.get_location(King, line)?,
+            '车' | '伡' | '車' | '俥' => self.get_location(Rook, line)?,
+            '炮' | '砲' => self.get_location(Cannon, line)?,
+            '兵' | '卒' => self.get_location(Pawn, line)?,
+            _ => todo!(),
+        };
+
+        let step = match input[2] {
+            '進' | '进' => self.make_step((x, y), (x + dest, y)),
+            '退' => self.make_step((x, y), (x - dest, y)),
+            '平' => self.make_step((x, y), (x, dest)),
+            _ => return Err(String::from("非法操作")),
+        };
+
+        if !self.can_move(&step) {
+            return Err(String::from("_"));
+        } else {
+            return Ok(step);
+        }
     }
     fn parse_mandarin_step(&mut self, input: &[char]) -> Result<Step, String> {
+        let line = match StoneMap::char_to_number(input[1]) {
+            Ok(line) => line,
+            Err(_) => return Err(String::from("不是可以解析的数字")),
+        };
+
+        let dest = match StoneMap::char_to_number(input[3]) {
+            Ok(dest) => dest,
+            Err(_) => return Err(String::from("不是可以解析的数字")),
+        };
         todo!()
     }
     fn parse_bishop_step(&mut self, input: &[char]) -> Result<Step, String> {
@@ -387,6 +406,179 @@ impl StoneMap {
     }
     fn parse_same_line_step(&mut self, input: &[char]) -> Result<Step, String> {
         todo!()
+    }
+    // 一个辅助函数
+    fn char_to_number(c: char) -> Result<usize, String> {
+        match c {
+            '一' | '壹' | '1' | '１' => Ok(1),
+            '二' | '贰' | '2' | '２' => Ok(2),
+            '三' | '叁' | '3' | '３' => Ok(3),
+            '四' | '肆' | '4' | '４' => Ok(4),
+            '五' | '伍' | '5' | '５' => Ok(5),
+            '六' | '陆' | '6' | '６' => Ok(6),
+            '七' | '柒' | '7' | '７' => Ok(7),
+            '八' | '捌' | '8' | '８' => Ok(8),
+            '九' | '玖' | '9' | '９' => Ok(9),
+            _ => Err(String::from("无法解析数字")),
+        }
+    }
+    fn make_step(&self, from: (usize, usize), to: (usize, usize)) -> Step {
+        Step {
+            from,
+            to,
+            killed: self.stone_map[to.0][to.1],
+        }
+    }
+    fn get_location(&self, ty: StoneType, line: usize) -> Result<(usize, usize), String> {
+        let &stones = if self.turn == Up {
+            &self.up_stones
+        } else {
+            &self.down_stones
+        };
+
+        let closure = | list: &[usize] | {
+            for i in list.iter() {
+                if let Alive(x, y) = stones[*i] {
+                    if y == line {
+                        return Ok((x, y));
+                    }
+                }
+            }
+            return Err(String::from(""));
+        };
+        match ty {
+            King => {
+                if let Alive(x, y) = stones[4] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+            Mandarin => {
+                if let Alive(x, y) = stones[3] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[5] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+            Bishop => {
+                if let Alive(x, y) = stones[2] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[6] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+            Knight => {
+                if let Alive(x, y) = stones[1] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[7] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+            Rook => {
+                if let Alive(x, y) = stones[0] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[8] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+            Cannon => {
+                if let Alive(x, y) = stones[10] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[14] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+            Pawn => {
+                if let Alive(x, y) = stones[9] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[11] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[12] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[13] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stones[15] {
+                    if y != line {
+                        Err(String::from("获取位置出错"))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(String::from("获取位置出错"))
+                }
+            }
+        }
     }
 }
 
