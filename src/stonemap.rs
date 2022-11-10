@@ -6,17 +6,17 @@ use crate::stone::Stone;
 use crate::stone::StoneType::{self, Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
 
 #[derive(Clone, Copy, PartialEq)]
-enum StoneIndex {
+pub enum StoneIndex {
     Alive(usize, usize),
     Dead,
 }
 
 #[derive(Clone)]
 pub struct StoneMap {
-    stone_map: [[Option<Stone>; 9]; 10],
-    up_stones: [StoneIndex; 16],
-    down_stones: [StoneIndex; 16],
-    turn: Camp,
+    pub stone_map: [[Option<Stone>; 9]; 10],
+    pub up_stones: [StoneIndex; 16],
+    pub down_stones: [StoneIndex; 16],
+    pub turn: Camp,
 }
 
 use crate::step::Step;
@@ -185,7 +185,6 @@ impl StoneMap {
         ret
     }
 
-    
     #[allow(dead_code)] // 走法生成器
     pub fn generate_stone_steps(&mut self) -> Vec<Step> {
         todo!()
@@ -194,10 +193,6 @@ impl StoneMap {
     pub fn parse_step(&mut self, input: &str) -> Result<Step, String> {
         // 首先转换为 字符数组
         let chars: Vec<char> = input.trim().chars().collect();
-        if chars.len() < 4 || chars.len() > 5 {
-            // 可能有五个字，如前兵九平八
-            return Err(String::from("输入字符串过长或过短."));
-        }
 
         // 分为两步，首先获取棋子位置，先不考虑兵的情况
         let (x, y) = self.get_location(&chars)?;
@@ -231,18 +226,24 @@ impl StoneMap {
         if to.1 < 3 || to.1 > 5 || camp == Up && to.0 > 2 || camp == Down && to.0 < 7 {
             return false;
         }
-        (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) == 1
+        (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32)
+            + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32)
+            == 1
     }
     fn can_mandarin_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
         if to.1 < 3 || to.1 > 5 || camp == Up && to.0 > 2 || camp == Down && to.0 < 7 {
             return false;
         }
-        (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) == 2
+        (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32)
+            + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32)
+            == 2
     }
     fn can_bishop_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
         if camp == Up && to.0 > 4
             || camp == Down && to.0 < 5
-            || (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 8
+            || (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32)
+                + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32)
+                != 8
         {
             return false;
         }
@@ -251,7 +252,10 @@ impl StoneMap {
         self.stone_map[cx][cy] == None
     }
     fn can_knight_move(&mut self, from: (usize, usize), to: (usize, usize), _camp: Camp) -> bool {
-        if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 5 {
+        if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32)
+            + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32)
+            != 5
+        {
             return false;
         } else if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) == 1 {
             // 沿着纵向跳了一步，横向跳了两步
@@ -327,7 +331,10 @@ impl StoneMap {
         false
     }
     fn can_pawn_move(&mut self, from: (usize, usize), to: (usize, usize), camp: Camp) -> bool {
-        if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32) + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32) != 1 {
+        if (from.0 as i32 - to.0 as i32) * (from.0 as i32 - to.0 as i32)
+            + (from.1 as i32 - to.1 as i32) * (from.1 as i32 - to.1 as i32)
+            != 1
+        {
             return false;
         }
 
@@ -350,6 +357,10 @@ impl StoneMap {
     }
 
     fn get_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        if input.len() < 4 {
+            return Err(String::from("输入字符串过短"));
+        }
+
         match input[0] {
             '将' | '帅' | '將' | '帥' | '王' => self.get_king_location(input),
             '车' | '伡' | '車' | '俥' => self.get_rook_location(input),
@@ -358,15 +369,70 @@ impl StoneMap {
             '士' | '仕' => self.get_mandarin_location(input),
             '象' | '相' => self.get_bishop_location(input),
             '馬' | '傌' | '马' | '㐷' => self.get_knight_location(input),
-            '前' | '后' | '後' | '二' | '三' | '四' => todo!(),
-            _ => Err(format!("未知棋子 `{}`", input[0]))
+            '前' | '后' | '後' | '中' | '二' | '三' | '四' => match input[1] {
+                '车' | '伡' | '車' | '俥' => self.get_rook_location(input),
+                '炮' | '砲' => self.get_cannon_location(input),
+                '兵' | '卒' => self.get_pawn_location(input),
+                '士' | '仕' => self.get_mandarin_location(input),
+                '象' | '相' => self.get_bishop_location(input),
+                '馬' | '傌' | '马' | '㐷' => self.get_knight_location(input),
+                '一' | '壹' | '1' | '１' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
+                | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6'
+                | '６' | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖'
+                | '9' | '９' => self.get_pawn_location(input),
+                _ => Err(format!("未知棋子 `{}`", input[1])),
+            },
+            _ => Err(format!("未知棋子 `{}`", input[0])),
         }
     }
     fn get_king_location(&self, input: &[char]) -> Result<(usize, usize), String> {
-        todo!()
+        let col = StoneMap::char_to_number(input[1])?;
+        let stones = match self.turn {
+            Up => &self.up_stones,
+            Down => &self.down_stones,
+        };
+
+        // 检查是否活着
+        if let Alive(x, y) = stones[4] {
+            if y != col {
+                Err(format!("将或帅不位于列{}", input[1]))
+            } else {
+                Ok((x, y))
+            }
+        } else {
+            Err(String::from("将或帅已经死亡."))
+        }
     }
     fn get_mandarin_location(&self, input: &[char]) -> Result<(usize, usize), String> {
-        todo!()
+        let stones = match self.turn {
+            Up => &self.up_stones,
+            Down => &self.down_stones,
+        };
+
+        let mandarin_1 = stones[3];
+        let mandarin_2 = stones[5];
+
+        let result: Result<(usize, usize), String> = match input[0] {
+            '前' => {
+                todo!()
+            }
+            '后' | '後' => {
+                todo!()
+            }
+            '士' | '仕' => {
+                let mut ret: Result<(usize, usize), String> = Err(format!(""));
+                let col = StoneMap::char_to_number(input[1])?;
+                if let Alive(x, y) = mandarin_1 {
+                    if y == col {  ret = Ok((x, y)); }
+                }
+                if let Alive(x, y) = mandarin_2 {
+                    if y == col {  ret = Ok((x, y)); }
+                }
+                ret
+            }
+            _ => Err(format!("未知字符`{}`", input[0])),
+        };
+        result
     }
     fn get_bishop_location(&self, input: &[char]) -> Result<(usize, usize), String> {
         todo!()
@@ -384,8 +450,7 @@ impl StoneMap {
         todo!()
     }
 
-
-// 一个辅助函数
+    // 一个辅助函数
     fn char_to_number(c: char) -> Result<usize, String> {
         match c {
             '一' | '壹' | '1' | '１' => Ok(1),
@@ -407,7 +472,6 @@ impl StoneMap {
             killed: self.stone_map[to.0][to.1],
         }
     }
-
 }
 
 // 輸出棋盤
@@ -462,10 +526,14 @@ impl Display for StoneMap {
         writeln!(f, "　￣￣￣￣￣￣￣￣￣　")?;
         writeln!(f, "　９８７６５４３２１　")?;
 
-        writeln!(f, "轮到{}", match self.turn {
-            Up => "黑方".bright_white(),
-            Down => "红方".red(),
-        } )?;
+        writeln!(
+            f,
+            "轮到{}",
+            match self.turn {
+                Up => "黑方".bright_white(),
+                Down => "红方".red(),
+            }
+        )?;
         Ok(())
     }
 }
