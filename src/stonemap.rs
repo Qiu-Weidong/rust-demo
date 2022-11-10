@@ -199,17 +199,10 @@ impl StoneMap {
             return Err(String::from("输入字符串过长或过短."));
         }
 
-        match chars[0] {
-            '将' | '帅' | '將' | '帥' | '王' => self.parse_king_step(&chars),
-            '车' | '伡' | '車' | '俥' => self.parse_rook_step(&chars),
-            '炮' | '砲' => self.parse_cannon_step(&chars),
-            '兵' | '卒' => self.parse_pawn_step(&chars),
-            '士' | '仕' => self.parse_mandarin_step(&chars),
-            '象' | '相' => self.parse_bishop_step(&chars),
-            '馬' | '傌' | '马' | '㐷' => self.parse_knight_step(&chars),
-            '前' | '后' | '後' | '中' | '二' | '三' | '四' => self.parse_same_line_step(&chars),
-            _ => Err(format!("未知字符: {}", chars[0])),
-        }
+        // 分为两步，首先获取棋子位置，先不考虑兵的情况
+        let (x, y) = self.get_location(&chars)?;
+
+        todo!()
     }
     // private
     fn is_king_meeted(&mut self) -> bool {
@@ -356,152 +349,43 @@ impl StoneMap {
         }
     }
 
-    fn parse_straight_step(&mut self, input: &[char]) -> Result<Step, String> {
-        let line = StoneMap::char_to_number(input[1])?;
-        let dest = StoneMap::char_to_number(input[3])?;
-
-        // 对于line和dest要切换一下
-        let line = if self.turn == Down { 9 - line } else { line - 1 };
-        let line_2 = if self.turn == Down { 9- dest } else { dest - 1 }; // 用于 平 
-
-        let (x, y) = match input[0] {
-            '将' | '帅' | '將' | '帥' | '王' => self.get_location(King, line)?,
-            '车' | '伡' | '車' | '俥' => self.get_location(Rook, line)?,
-            '炮' | '砲' => self.get_location(Cannon, line)?,
-            '兵' | '卒' => self.get_location(Pawn, line)?,
-            _ => return Err(format!("棋子 `{}` 不能走直线", input[0])),
-        };
-
-        let step = match input[2] {
-            '進' | '进' => match self.turn {
-                Up => self.make_step((x, y), (x + dest, y)),
-                Down => self.make_step((x, y), (x - dest, y)),
-            } ,
-            '退' => match self.turn {
-                Up => self.make_step((x, y), (x - dest, y)),
-                Down => self.make_step((x, y), (x + dest, y)),
-            },
-            '平' => self.make_step((x, y), (x, line_2)),
-            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
-        };
-
-        if !self.can_move(&step) {
-            Err(String::from("非法走步"))
-        } else {
-            Ok(step)
+    fn get_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        match input[0] {
+            '将' | '帅' | '將' | '帥' | '王' => self.get_king_location(input),
+            '车' | '伡' | '車' | '俥' => self.get_rook_location(input),
+            '炮' | '砲' => self.get_cannon_location(input),
+            '兵' | '卒' => self.get_pawn_location(input),
+            '士' | '仕' => self.get_mandarin_location(input),
+            '象' | '相' => self.get_bishop_location(input),
+            '馬' | '傌' | '马' | '㐷' => self.get_knight_location(input),
+            '前' | '后' | '後' | '二' | '三' | '四' => todo!(),
+            _ => Err(format!("未知棋子 `{}`", input[0]))
         }
     }
-    fn parse_king_step(&mut self, input: &[char]) -> Result<Step, String> {
-        self.parse_straight_step(input)
-    }
-    fn parse_mandarin_step(&mut self, input: &[char]) -> Result<Step, String> {
-        let line = StoneMap::char_to_number(input[1])?;
-        let dest = StoneMap::char_to_number(input[3])?;
-        let line = if self.turn == Down { 9 - line } else { line - 1 };
-        let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
-        let (x, y) = self.get_location(Mandarin, line)?;
-
-        if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 1 {
-            return Err(String::from("士只能走斜角"));
-        }
-        let step = match input[2] {
-            '進' | '进' => match self.turn {
-                Up => self.make_step((x, y), (x + 1, dest)),
-                Down => self.make_step((x, y), (x - 1, dest)),
-            } ,
-            '退' => match self.turn {
-                Up => self.make_step((x, y), (x - 1, dest)),
-                Down => self.make_step((x, y), (x + 1, dest)),
-            },
-            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
-        };
-
-        if !self.can_move(&step) {
-            Err(String::from("非法走步"))
-        } else {
-            Ok(step)
-        }
-    }
-    fn parse_bishop_step(&mut self, input: &[char]) -> Result<Step, String> {
-        let line = StoneMap::char_to_number(input[1])?;
-        let dest = StoneMap::char_to_number(input[3])?;
-        let line = if self.turn == Down { 9 - line } else { line - 1 };
-        let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
-        let (x, y) = self.get_location(Bishop, line)?;
-
-        if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 4 {
-            return Err(String::from("输入相的走步非法"));
-        }
-        let step = match input[2] {
-            '進' | '进' => match self.turn {
-                Up => self.make_step((x, y), (x + 2, dest)),
-                Down => self.make_step((x, y), (x - 2, dest)),
-            } ,
-            '退' => match self.turn {
-                Up => self.make_step((x, y), (x - 2, dest)),
-                Down => self.make_step((x, y), (x + 2, dest)),
-            } ,
-            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
-        };
-        if !self.can_move(&step) {
-            Err(String::from("非法走步"))
-        } else {
-            Ok(step)
-        }
-    }
-    fn parse_knight_step(&mut self, input: &[char]) -> Result<Step, String> {
-        let line = StoneMap::char_to_number(input[1])?;
-        let dest = StoneMap::char_to_number(input[3])?;
-        let line = if self.turn == Down { 9 - line } else { line - 1 };
-        let dest = if self.turn == Down { 9- dest } else { dest - 1 }; 
-        let (x, y) = self.get_location(Knight, line)?;
-
-        if (y as i32 - dest as i32) * (y as i32 - dest as i32) != 4 && (y as i32 - dest as i32) * (y as i32 - dest as i32) != 1 {
-            return Err(String::from("输入马的走步非法."));
-        }
-        let gap = if (y as i32 - dest as i32) * (y as i32 - dest as i32) == 4 { 1 } else { 2 };
-        let step = match input[2] {
-            '進' | '进' => match self.turn {
-                Up => self.make_step((x, y), (x + gap, dest)),
-                Down => self.make_step((x, y), (x - gap, dest)),
-            } ,
-            '退' => match self.turn {
-                Up => self.make_step((x, y), (x - gap, dest)),
-                Down => self.make_step((x, y), (x + gap, dest)),
-            } ,
-            _ => return Err(format!("非法操作 `{}`, 请使用進(进)、退、平", input[2])),
-        };
-
-        if !self.can_move(&step) {
-            Err(String::from("非法走步"))
-        } else {
-            Ok(step)
-        }
-    }
-    fn parse_rook_step(&mut self, input: &[char]) -> Result<Step, String> {
-        self.parse_straight_step(input)
-    }
-    fn parse_cannon_step(&mut self, input: &[char]) -> Result<Step, String> {
-        self.parse_straight_step(input)
-    }
-    fn parse_pawn_step(&mut self, input: &[char]) -> Result<Step, String> {
-        self.parse_straight_step(input)
-    }
-    fn parse_same_line_step(&mut self, _input: &[char]) -> Result<Step, String> {
-        match _input[1] {
-            '车' | '伡' | '車' | '俥' => todo!(),
-            '馬' | '傌' | '马' | '㐷' => todo!(),
-            '象' | '相' => todo!(),
-            '士' | '仕' => todo!(),
-            '炮' | '砲' => todo!(),
-            '兵' | '卒' => todo!(),
-            _ => todo!()
-        };
-        
-        
+    fn get_king_location(&self, input: &[char]) -> Result<(usize, usize), String> {
         todo!()
     }
-    // 一个辅助函数
+    fn get_mandarin_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        todo!()
+    }
+    fn get_bishop_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        todo!()
+    }
+    fn get_knight_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        todo!()
+    }
+    fn get_rook_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        todo!()
+    }
+    fn get_cannon_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        todo!()
+    }
+    fn get_pawn_location(&self, input: &[char]) -> Result<(usize, usize), String> {
+        todo!()
+    }
+
+
+// 一个辅助函数
     fn char_to_number(c: char) -> Result<usize, String> {
         match c {
             '一' | '壹' | '1' | '１' => Ok(1),
@@ -523,33 +407,7 @@ impl StoneMap {
             killed: self.stone_map[to.0][to.1],
         }
     }
-    fn get_location(&self, ty: StoneType, line: usize) -> Result<(usize, usize), String> {
-        let &stones = if self.turn == Up {
-            &self.up_stones
-        } else {
-            &self.down_stones
-        };
 
-        let closure = |list: &[usize]| {
-            for i in list.iter() {
-                if let Alive(x, y) = stones[*i] {
-                    if y == line {
-                        return Ok((x, y));
-                    }
-                }
-            }
-            return Err(format!("棋子 `{:?}` 已经死亡或不在指定位置.", ty));
-        };
-        match ty {
-            King => closure(&[4]),
-            Mandarin => closure(&[3, 5]),
-            Bishop => closure(&[2, 6]),
-            Knight => closure(&[1, 7]),
-            Rook => closure(&[0, 8]),
-            Cannon => closure(&[10, 14]),
-            Pawn => closure(&[9, 11, 12, 13, 15]),
-        }
-    }
 }
 
 // 輸出棋盤
