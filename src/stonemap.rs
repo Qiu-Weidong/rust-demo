@@ -193,16 +193,36 @@ impl StoneMap {
     pub fn parse_step(&mut self, input: &str) -> Result<Step, String> {
         // 首先转换为 字符数组
         let chars: Vec<char> = input.trim().chars().collect();
+        if chars.len() < 4 || chars.len() >= 5 && chars[1] != '兵' && chars[1] != '卒' {
+            return Err(String::from("非法输入."));
+        }
+        let chars = if chars.len() >= 5 {
+            [chars[0], chars[2], chars[3], chars[4]]
+        } else {
+            [chars[0], chars[1], chars[2], chars[3]]
+        };
 
         // 分为两步，首先获取棋子位置，先不考虑兵的情况
         let (x, y) = self.get_location(&chars)?;
 
         match chars[0] {
-            '兵' | '卒' 
-            | '车' | '伡' | '車' | '俥'
-            | '炮' | '砲' 
-            | '将' | '帅' | '將' | '帥' | '王'  => self.parse_straight_step(&chars, (x, y)),
-            _ => Err(format!("未知字符`{}`", chars[0]))
+            '兵' | '卒' | '车' | '伡' | '車' | '俥' | '炮' | '砲' | '将' | '帅' | '將' | '帥'
+            | '王' => self.parse_straight_step(&chars, (x, y)),
+            '前' | '后' | '後' | '中' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
+            | '四' | '肆' | '4' | '４' => match chars[1] {
+                // '车' | '伡' | '車' | '俥' => self.parse_straight_step(&chars, (x, y)),
+                // // '炮' | '砲' => self.get_cannon_location(input),
+                // // '兵' | '卒' => self.get_pawn_location(input),
+                // // '士' | '仕' => self.get_mandarin_location(input),
+                // // '象' | '相' => self.get_bishop_location(input),
+                // // '馬' | '傌' | '马' | '㐷' => self.get_knight_location(input),
+                // '一' | '壹' | '1' | '１' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
+                // | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6'
+                // | '６' | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖'
+                // | '9' | '９' => self.get_pawn_location(input),
+                _ => self.parse_straight_step(&chars, (x, y)),
+            },
+            _ => Err(format!("未知字符`{}`", chars[0])),
         }
     }
     // private
@@ -363,10 +383,6 @@ impl StoneMap {
     }
 
     fn get_location(&self, input: &[char]) -> Result<(usize, usize), String> {
-        if input.len() < 4 {
-            return Err(String::from("输入字符串过短"));
-        }
-
         match input[0] {
             '将' | '帅' | '將' | '帥' | '王' => self.get_king_location(input),
             '车' | '伡' | '車' | '俥' => self.get_rook_location(input),
@@ -375,7 +391,8 @@ impl StoneMap {
             '士' | '仕' => self.get_mandarin_location(input),
             '象' | '相' => self.get_bishop_location(input),
             '馬' | '傌' | '马' | '㐷' => self.get_knight_location(input),
-            '前' | '后' | '後' | '中' | '二' | '三' | '四' => match input[1] {
+            '前' | '后' | '後' | '中' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
+            | '四' | '肆' | '4' | '４' => match input[1] {
                 '车' | '伡' | '車' | '俥' => self.get_rook_location(input),
                 '炮' | '砲' => self.get_cannon_location(input),
                 '兵' | '卒' => self.get_pawn_location(input),
@@ -393,6 +410,11 @@ impl StoneMap {
     }
     fn get_king_location(&self, input: &[char]) -> Result<(usize, usize), String> {
         let col = StoneMap::char_to_number(input[1])?;
+        // col要作處理
+        let col = match self.turn {
+            Up => col - 1,
+            Down => 9 - col,
+        };
         let stones = match self.turn {
             Up => &self.up_stones,
             Down => &self.down_stones,
@@ -429,27 +451,177 @@ impl StoneMap {
             Up => &self.up_stones,
             Down => &self.down_stones,
         };
+        // 不管怎么样，首先要找到所有活着的兵
+        let mut pawns: Vec<(usize, usize)> = Vec::new();
+        if let Alive(x, y) = stones[9] {
+            pawns.push((x, y));
+        }
+        if let Alive(x, y) = stones[11] {
+            pawns.push((x, y));
+        }
+        if let Alive(x, y) = stones[12] {
+            pawns.push((x, y));
+        }
+        if let Alive(x, y) = stones[13] {
+            pawns.push((x, y));
+        }
+        if let Alive(x, y) = stones[15] {
+            pawns.push((x, y));
+        }
+        if pawns.len() <= 0 {
+            return Err(String::from("兵全部死了."));
+        }
 
-        todo!()
+        match input[0] {
+            '前' | '后' | '後' | '二' | '三' | '四' => match input[1] {
+                '兵' | '卒' => {
+                    // [前后後二三四]兵进一 这种情况下必须所有兵在同一条直线上
+                    let col = pawns[0].1;
+                    for (_x, y) in pawns.iter() {
+                        if *y != col {
+                            return Err(String::from("兵不在同一直綫上,請指明兵所在列."));
+                        }
+                    }
+                    match self.turn {
+                        Up => pawns.sort_by(|(x1, _y1), (x2, _y2)| {
+                            if *x1 > *x2 {
+                                std::cmp::Ordering::Less
+                            } else if *x1 == *x2 {
+                                std::cmp::Ordering::Equal
+                            } else {
+                                std::cmp::Ordering::Greater
+                            }
+                        }),
+                        Down => pawns.sort_by(|(x1, _y1), (x2, _y2)| {
+                            if *x1 < *x2 {
+                                std::cmp::Ordering::Less
+                            } else if *x1 == *x2 {
+                                std::cmp::Ordering::Equal
+                            } else {
+                                std::cmp::Ordering::Greater
+                            }
+                        }),
+                    };
+                    if input[0] == '后' || input[0] == '後' {
+                        Ok(pawns[pawns.len() - 1])
+                    } else if input[0] == '前' {
+                        Ok(pawns[0])
+                    } else {
+                        let index = StoneMap::char_to_number(input[0])? - 1;
+                        if index >= pawns.len() {
+                            Err(format!("todo."))
+                        } else {
+                            Ok(pawns[index])
+                        }
+                    }
+                }
+                '一' | '壹' | '1' | '１' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
+                | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6'
+                | '６' | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖'
+                | '9' | '９' => {
+                    // [前后後二三四]三进一
+                    let col = StoneMap::char_to_number(input[1])?;
+                    // col要作處理
+                    let col = match self.turn {
+                        Up => col - 1,
+                        Down => 9 - col,
+                    };
+                    let mut tmp: Vec<(usize, usize)> = Vec::new();
+                    for (_x, y) in pawns.iter() {
+                        if *y == col {
+                            tmp.push((*_x, *y));
+                        }
+                    }
+                    let mut pawns = tmp;
+                    match self.turn {
+                        Up => pawns.sort_by(|(x1, _y1), (x2, _y2)| {
+                            if *x1 > *x2 {
+                                std::cmp::Ordering::Less
+                            } else if *x1 == *x2 {
+                                std::cmp::Ordering::Equal
+                            } else {
+                                std::cmp::Ordering::Greater
+                            }
+                        }),
+                        Down => pawns.sort_by(|(x1, _y1), (x2, _y2)| {
+                            if *x1 < *x2 {
+                                std::cmp::Ordering::Less
+                            } else if *x1 == *x2 {
+                                std::cmp::Ordering::Equal
+                            } else {
+                                std::cmp::Ordering::Greater
+                            }
+                        }),
+                    };
+
+                    if input[0] == '后' || input[0] == '後' {
+                        Ok(pawns[pawns.len() - 1])
+                    } else if input[0] == '前' {
+                        Ok(pawns[0])
+                    } else {
+                        let index = StoneMap::char_to_number(input[0])? - 1;
+                        if index >= pawns.len() {
+                            Err(format!("todo."))
+                        } else {
+                            Ok(pawns[index])
+                        }
+                    }
+                }
+                _ => Err(format!("未知字符 `{}`", input[1])),
+            },
+            '兵' | '卒' => {
+                // 兵五平一
+                let col = StoneMap::char_to_number(input[1])?;
+                // col要作處理
+                let col = match self.turn {
+                    Up => col - 1,
+                    Down => 9 - col,
+                };
+
+                let mut ret: (usize, usize) = (0, 0);
+                let mut cnt = 0;
+                for (x, y) in pawns.iter() {
+                    if *y == col { cnt += 1; ret = (*x, *y); }
+                }
+                if cnt != 1 { 
+                    Err(format!(""))
+                }
+                else {
+                    Ok(ret)
+                }
+            }
+            _ => Err(format!("未知字符 `{}`", input[0])),
+        }
     }
-    fn parse_straight_step(&mut self, input: &[char], from: (usize, usize)) -> Result<Step, String> {
+    fn parse_straight_step(
+        &mut self,
+        input: &[char],
+        from: (usize, usize),
+    ) -> Result<Step, String> {
         let dest = StoneMap::char_to_number(input[3])?;
-        let line = match self.turn { Up => dest - 1, Down => 9 - dest };
-
-        let step = match input[2] {
-            '進' | '进' => match self.turn { 
-                Up => self.make_step(from, (from.0 + dest, from.1)),
-                Down => self.make_step(from, (from.0 - dest, from.1))
-            },
-            '退' => match self.turn { 
-                Up => self.make_step(from, (from.0 - dest, from.1)),
-                Down => self.make_step(from, (from.0 + dest, from.1))
-            },
-            '平' => self.make_step(from, (from.0, line)),
-            _ => return  Err(format!("未知操作`{}`", input[2]))
+        let line = match self.turn {
+            Up => dest - 1,
+            Down => 9 - dest,
         };
 
-        if self.can_move(&step) { Ok(step) } else { Err(String::from("非法走步.")) } 
+        let step = match input[2] {
+            '進' | '进' => match self.turn {
+                Up => self.make_step(from, (from.0 + dest, from.1)),
+                Down => self.make_step(from, (from.0 - dest, from.1)),
+            },
+            '退' => match self.turn {
+                Up => self.make_step(from, (from.0 - dest, from.1)),
+                Down => self.make_step(from, (from.0 + dest, from.1)),
+            },
+            '平' => self.make_step(from, (from.0, line)),
+            _ => return Err(format!("未知操作`{}`", input[2])),
+        };
+
+        if self.can_move(&step) {
+            Ok(step)
+        } else {
+            Err(String::from("非法走步."))
+        }
     }
     // 一个辅助函数
     fn char_to_number(c: char) -> Result<usize, String> {
@@ -463,7 +635,7 @@ impl StoneMap {
             '七' | '柒' | '7' | '７' => Ok(7),
             '八' | '捌' | '8' | '８' => Ok(8),
             '九' | '玖' | '9' | '９' => Ok(9),
-            _ => Err(format!("无法将字符 `{}` 解析为数字.", c)),
+            _ => Err(format!("无法将字符 `{}` 解析为数字 1..9 .", c)),
         }
     }
     fn make_step(&self, from: (usize, usize), to: (usize, usize)) -> Step {
@@ -473,9 +645,14 @@ impl StoneMap {
             killed: self.stone_map[to.0][to.1],
         }
     }
-    
+
     // 獲取 士、相、馬、車、炮 的位置
-    fn get_two_location(&self, input: &[char], first: usize, second: usize) -> Result<(usize, usize), String> {
+    fn get_two_location(
+        &self,
+        input: &[char],
+        first: usize,
+        second: usize,
+    ) -> Result<(usize, usize), String> {
         let stones = match self.turn {
             Up => &self.up_stones,
             Down => &self.down_stones,
@@ -486,52 +663,66 @@ impl StoneMap {
 
         let result: Result<(usize, usize), String> = match input[0] {
             '前' => {
-                if let (Alive(x1, y1), Alive(x2, y2))= (stone_1, stone_2) {
+                if let (Alive(x1, y1), Alive(x2, y2)) = (stone_1, stone_2) {
                     if y1 != y2 {
                         Err(format!("兩個`{}`不在同一列.", input[1]))
-                    }
-                    else if self.turn == Up && x1 < x2 || self.turn == Down &&x1 > x2 {
+                    } else if self.turn == Up && x1 < x2 || self.turn == Down && x1 > x2 {
                         Ok((x2, y2))
-                    }
-                    else { Ok((x1, y1)) }
-                }
-                else { Err(format!("兩個`{}`不在同一列.", input[1])) }
-            }
-            '后' | '後' => {
-                if let (Alive(x1, y1), Alive(x2, y2))= (stone_1, stone_2) {
-                    if y1 != y2 {
-                        Err(format!("兩個`{}`不在同一列.", input[1]))
-                    }
-                    else if self.turn == Up && x1 < x2 || self.turn == Down &&x1 > x2 {
+                    } else {
                         Ok((x1, y1))
                     }
-                    else { Ok((x2, y2)) }
+                } else {
+                    Err(format!("兩個`{}`不在同一列.", input[1]))
                 }
-                else { Err(format!("兩個`{}`不在同一列.", input[1])) }
+            }
+            '后' | '後' => {
+                if let (Alive(x1, y1), Alive(x2, y2)) = (stone_1, stone_2) {
+                    if y1 != y2 {
+                        Err(format!("兩個`{}`不在同一列.", input[1]))
+                    } else if self.turn == Up && x1 < x2 || self.turn == Down && x1 > x2 {
+                        Ok((x1, y1))
+                    } else {
+                        Ok((x2, y2))
+                    }
+                } else {
+                    Err(format!("兩個`{}`不在同一列.", input[1]))
+                }
             }
             _ => {
                 let col = StoneMap::char_to_number(input[1])?;
                 // col要作處理
-                let col = match self.turn { Up => col - 1, Down => 9 - col };
+                let col = match self.turn {
+                    Up => col - 1,
+                    Down => 9 - col,
+                };
 
-                if let (Alive(x1, y1), Alive(x2, y2))= (stone_1, stone_2) {
+                if let (Alive(x1, y1), Alive(x2, y2)) = (stone_1, stone_2) {
                     // 都活著，保證不共綫
-                    if y1 == y2 { Err(format!("兩個`{}`共綫, 請使用`前`、`后/後`指明.", input[0])) }
-                    else if y1 == col { Ok((x1, y1)) }
-                    else if y2 == col { Ok((x2, y2)) }
-                    else { Err(format!("兩個`{}`都不在列{}上.", input[0], input[1])) }
+                    if y1 == y2 {
+                        Err(format!("兩個`{}`共綫, 請使用`前`、`后/後`指明.", input[0]))
+                    } else if y1 == col {
+                        Ok((x1, y1))
+                    } else if y2 == col {
+                        Ok((x2, y2))
+                    } else {
+                        Err(format!("兩個`{}`都不在列{}上.", input[0], input[1]))
+                    }
+                } else if let Alive(x, y) = stone_1 {
+                    if y != col {
+                        Err(format!("沒有`{}`位於列{}", input[0], input[1]))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else if let Alive(x, y) = stone_2 {
+                    if y != col {
+                        Err(format!("沒有`{}`位於列{}", input[0], input[1]))
+                    } else {
+                        Ok((x, y))
+                    }
+                } else {
+                    Err(format!("兩個`{}`都已經陣亡了.", input[0]))
                 }
-                else if let Alive(x, y) = stone_1 { 
-                    if y != col { Err(format!("沒有`{}`位於列{}", input[0], input[1])) }
-                    else { Ok((x, y)) }
-                }
-                else if let Alive(x, y) = stone_2 { 
-                    if y != col { Err(format!("沒有`{}`位於列{}", input[0], input[1])) }
-                    else { Ok((x, y)) }
-                }
-                else { Err(format!("兩個`{}`都已經陣亡了.", input[0])) }
             }
-
         };
         result
     }
