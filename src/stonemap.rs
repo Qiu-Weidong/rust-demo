@@ -197,7 +197,13 @@ impl StoneMap {
         // 分为两步，首先获取棋子位置，先不考虑兵的情况
         let (x, y) = self.get_location(&chars)?;
 
-        todo!()
+        match chars[0] {
+            '兵' | '卒' 
+            | '车' | '伡' | '車' | '俥'
+            | '炮' | '砲' 
+            | '将' | '帅' | '將' | '帥' | '王'  => self.parse_straight_step(&chars, (x, y)),
+            _ => Err(format!("未知字符`{}`", chars[0]))
+        }
     }
     // private
     fn is_king_meeted(&mut self) -> bool {
@@ -423,26 +429,6 @@ impl StoneMap {
             Up => &self.up_stones,
             Down => &self.down_stones,
         };
-        // 5
-        // 4 1
-        // 3 2
-        // 3 1 1
-        // 2 2 1
-        // 2 1 1 1
-        // 1 1 1 1 1
-
-        // 4
-        // 3 1
-        // 2 2
-        // 2 1 1
-        // 1 1 1 1
-
-        // 3
-        // 2 1
-        // 1 1 1
-
-        // 2
-        // 1 1
 
         todo!()
     }
