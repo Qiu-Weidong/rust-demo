@@ -193,7 +193,10 @@ impl StoneMap {
     pub fn parse_step(&mut self, input: &str) -> Result<Step, String> {
         // 首先转换为 字符数组
         let chars: Vec<char> = input.trim().chars().collect();
-        if chars.len() < 4 || chars.len() >= 5 && chars[1] != '兵' && chars[1] != '卒' {
+        if chars.len() < 4
+            || chars.len() >= 5 && chars[1] != '兵' && chars[1] != '卒'
+            || chars.len() > 5
+        {
             return Err(String::from("非法输入."));
         }
         let chars = if chars.len() >= 5 {
@@ -202,27 +205,21 @@ impl StoneMap {
             [chars[0], chars[1], chars[2], chars[3]]
         };
 
-        // 分为两步，首先获取棋子位置，先不考虑兵的情况
+        // 获取棋子的起始位置
         let (x, y) = self.get_location(&chars)?;
-
-        match chars[0] {
-            '兵' | '卒' | '车' | '伡' | '車' | '俥' | '炮' | '砲' | '将' | '帅' | '將' | '帥'
-            | '王' => self.parse_straight_step(&chars, (x, y)),
-            '前' | '后' | '後' | '中' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
-            | '四' | '肆' | '4' | '４' => match chars[1] {
-                // '车' | '伡' | '車' | '俥' => self.parse_straight_step(&chars, (x, y)),
-                // // '炮' | '砲' => self.get_cannon_location(input),
-                // // '兵' | '卒' => self.get_pawn_location(input),
-                // // '士' | '仕' => self.get_mandarin_location(input),
-                // // '象' | '相' => self.get_bishop_location(input),
-                // // '馬' | '傌' | '马' | '㐷' => self.get_knight_location(input),
-                // '一' | '壹' | '1' | '１' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
-                // | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6'
-                // | '６' | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖'
-                // | '9' | '９' => self.get_pawn_location(input),
-                _ => self.parse_straight_step(&chars, (x, y)),
-            },
-            _ => Err(format!("未知字符`{}`", chars[0])),
+        // 获取棋子的目标位置
+        let (dest_x, dest_y) = self.get_dest(&chars, (x, y))?;
+        // 构造step
+        let step = Step {
+            from: (x, y),
+            to: (dest_x, dest_y),
+            killed: self.stone_map[dest_x][dest_y],
+        };
+        // 判断可达性
+        if self.can_move(&step) {
+            Ok(step)
+        } else {
+            Err(String::from("非法走步."))
         }
     }
     // private
@@ -382,6 +379,12 @@ impl StoneMap {
         }
     }
 
+
+
+
+
+
+    // 解析走步的函数
     fn get_location(&self, input: &[char]) -> Result<(usize, usize), String> {
         match input[0] {
             '将' | '帅' | '將' | '帥' | '王' => self.get_king_location(input),
@@ -581,48 +584,170 @@ impl StoneMap {
                 let mut ret: (usize, usize) = (0, 0);
                 let mut cnt = 0;
                 for (x, y) in pawns.iter() {
-                    if *y == col { cnt += 1; ret = (*x, *y); }
+                    if *y == col {
+                        cnt += 1;
+                        ret = (*x, *y);
+                    }
                 }
-                if cnt != 1 { 
+                if cnt != 1 {
                     Err(format!(""))
-                }
-                else {
+                } else {
                     Ok(ret)
                 }
             }
             _ => Err(format!("未知字符 `{}`", input[0])),
         }
     }
-    fn parse_straight_step(
-        &mut self,
+
+    fn get_dest(&self, input: &[char], from: (usize, usize)) -> Result<(usize, usize), String> {
+        let (dest_x, dest_y) = match input[0] {
+            '兵' | '卒' | '车' | '伡' | '車' | '俥' | '炮' | '砲' | '将' | '帅' | '將' | '帥'
+            | '王' => self.parse_straight_dest(input, from)?,
+
+            '士' | '仕' => self.parse_mandarin_dest(input, from)?,
+            '象' | '相' => self.parse_bishop_dest(input, from)?,
+            '馬' | '傌' | '马' | '㐷' => self.parse_knight_dest(input, from)?,
+
+            _ => match input[1] {
+                '士' | '仕' => self.parse_mandarin_dest(input, from)?,
+                '象' | '相' => self.parse_bishop_dest(input, from)?,
+                '馬' | '傌' | '马' | '㐷' => self.parse_knight_dest(input, from)?,
+                _ => self.parse_straight_dest(input, from)?,
+            },
+        };
+
+        if dest_x < 0 || dest_y < 0 || dest_x > 9 || dest_y > 8 {
+            return Err(format!("todo"));
+        }
+        Ok((dest_x as usize, dest_y as usize))
+    }
+
+    fn parse_straight_dest(
+        &self,
         input: &[char],
         from: (usize, usize),
-    ) -> Result<Step, String> {
+    ) -> Result<(i32, i32), String> {
         let dest = StoneMap::char_to_number(input[3])?;
         let line = match self.turn {
             Up => dest - 1,
             Down => 9 - dest,
         };
 
-        let step = match input[2] {
+        match input[2] {
             '進' | '进' => match self.turn {
-                Up => self.make_step(from, (from.0 + dest, from.1)),
-                Down => self.make_step(from, (from.0 - dest, from.1)),
+                Up => Ok((from.0 as i32 + dest as i32, from.1 as i32)),
+                Down => Ok((from.0 as i32 - dest as i32, from.1 as i32)),
             },
             '退' => match self.turn {
-                Up => self.make_step(from, (from.0 - dest, from.1)),
-                Down => self.make_step(from, (from.0 + dest, from.1)),
+                Up => Ok((from.0 as i32 - dest as i32, from.1 as i32)),
+                Down => Ok((from.0 as i32 + dest as i32, from.1 as i32)),
             },
-            '平' => self.make_step(from, (from.0, line)),
+            '平' => Ok((from.0 as i32, line as i32)),
             _ => return Err(format!("未知操作`{}`", input[2])),
+        }
+
+        // 检查目标位置是否在棋盘外
+        // if dest_x < 0 || dest_y < 0 || dest_x > 9 || dest_y > 8 {
+        //     return Err(format!("todo"));
+        // }
+
+        // let (dest_x, dest_y) = (dest_x as usize, dest_y as usize);
+        // let step = Step {
+        //     from,
+        //     to: (dest_x, dest_y),
+        //     killed: self.stone_map[dest_x][dest_y],
+        // };
+        // if self.can_move(&step) {
+        //     Ok(step)
+        // } else {
+        //     Err(String::from("非法走步."))
+        // }
+    }
+    fn parse_knight_dest(
+        &self,
+        input: &[char],
+        from: (usize, usize),
+    ) -> Result<(i32, i32), String> {
+        let line = StoneMap::char_to_number(input[3])?;
+        let line = match self.turn {
+            Up => line - 1,
+            Down => 9 - line,
         };
 
-        if self.can_move(&step) {
-            Ok(step)
+        let dest = (from.1 as i32 - line as i32) * (from.1 as i32 - line as i32);
+        let gap = if dest == 1 {
+            2
+        } else if dest == 4 {
+            1
         } else {
-            Err(String::from("非法走步."))
+            return Err(format!("todo"));
+        };
+
+        match input[2] {
+            '進' | '进' => match self.turn {
+                Up => Ok((from.0 as i32 + gap, line as i32)),
+                Down => Ok((from.0 as i32 - gap, line as i32)),
+            },
+            '退' => match self.turn {
+                Up => Ok((from.0 as i32 - gap, line as i32)),
+                Down => Ok((from.0 as i32 + gap, line as i32)),
+            },
+            _ => return Err(format!("未知操作`{}`", input[2])),
         }
     }
+    fn parse_bishop_dest(
+        &self,
+        input: &[char],
+        from: (usize, usize),
+    ) -> Result<(i32, i32), String> {
+        let line = StoneMap::char_to_number(input[3])?;
+        let line = match self.turn {
+            Up => line - 1,
+            Down => 9 - line,
+        };
+
+        let dest = (from.1 as i32 - line as i32) * (from.1 as i32 - line as i32);
+        if dest != 4 { return Err(format!("")); }
+
+        match input[2] {
+            '進' | '进' => match self.turn {
+                Up => Ok((from.0 as i32 + 2, line as i32)),
+                Down => Ok((from.0 as i32 - 2, line as i32)),
+            },
+            '退' => match self.turn {
+                Up => Ok((from.0 as i32 - 2, line as i32)),
+                Down => Ok((from.0 as i32 + 2, line as i32)),
+            },
+            _ => return Err(format!("未知操作`{}`", input[2])),
+        }
+    }
+    fn parse_mandarin_dest(
+        &self,
+        input: &[char],
+        from: (usize, usize),
+    ) -> Result<(i32, i32), String> {
+        let line = StoneMap::char_to_number(input[3])?;
+        let line = match self.turn {
+            Up => line - 1,
+            Down => 9 - line,
+        };
+
+        let dest = (from.1 as i32 - line as i32) * (from.1 as i32 - line as i32);
+        if dest != 1 { return Err(format!("")); }
+
+        match input[2] {
+            '進' | '进' => match self.turn {
+                Up => Ok((from.0 as i32 + 1, line as i32)),
+                Down => Ok((from.0 as i32 - 1, line as i32)),
+            },
+            '退' => match self.turn {
+                Up => Ok((from.0 as i32 - 1, line as i32)),
+                Down => Ok((from.0 as i32 + 1, line as i32)),
+            },
+            _ => return Err(format!("未知操作`{}`", input[2])),
+        }
+    }
+
     // 一个辅助函数
     fn char_to_number(c: char) -> Result<usize, String> {
         match c {
@@ -636,13 +761,6 @@ impl StoneMap {
             '八' | '捌' | '8' | '８' => Ok(8),
             '九' | '玖' | '9' | '９' => Ok(9),
             _ => Err(format!("无法将字符 `{}` 解析为数字 1..9 .", c)),
-        }
-    }
-    fn make_step(&self, from: (usize, usize), to: (usize, usize)) -> Step {
-        Step {
-            from,
-            to,
-            killed: self.stone_map[to.0][to.1],
         }
     }
 
