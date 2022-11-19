@@ -105,7 +105,21 @@ impl StoneMap {
 
     #[allow(dead_code)]
     pub fn evaluate(&self) -> i32 {
-        todo!()
+        let powers = [1024, 512, 256, 248, 65335, 248, 256, 512, 1024, 128, 512, 128, 128, 128, 512, 128, ];
+        let mut up_score = 0;
+        let mut down_score = 0;
+        
+        for i in 0..16 {
+            if let Alive(_, _) = self.up_stones[i] {
+                up_score += powers[i];
+            }
+            if let Alive(_, _) = self.down_stones[i] {
+                down_score += powers[i];
+            }
+        }
+
+
+        up_score - down_score
     }
 
     pub fn make_move(&mut self, step: &Step) {
@@ -221,7 +235,7 @@ impl StoneMap {
     pub fn make_step(&self, from: (usize, usize), to: (usize, usize)) -> Step {
         Step {
             from, to,
-            killed: self.stone_map[to.0][to.1], 
+            killed: self.stone_map[to.0][to.1], weight: 0,
         }
     }
     

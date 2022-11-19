@@ -8,7 +8,7 @@ mod computer_player;
 use step::Step;
 use step_parser::parse_step;
 use stonemap::StoneMap;
-
+use computer_player::ComputerPlayer;
 use crate::{stonemap::StoneIndex, stone::Camp};
 
 fn main() {
@@ -85,6 +85,12 @@ fn main() {
                         Camp::Down => "红方".red(),
                     }
                 );
+
+                println!("AI思考中.");
+                let mut player = ComputerPlayer::new(stone_map.clone(), 4);
+                let step = player.play();
+                stone_map.make_move(&step);
+                stone_map.switch_turn();
             }
         }
         else {
