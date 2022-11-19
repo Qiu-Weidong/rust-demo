@@ -3,6 +3,7 @@ mod step;
 mod step_parser;
 mod stone;
 mod stonemap;
+mod computer_player;
 
 use step::Step;
 use step_parser::parse_step;

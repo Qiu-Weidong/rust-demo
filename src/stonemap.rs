@@ -1,9 +1,9 @@
 use colored::Colorize;
 use std::fmt::Display;
 
-use crate::step_parser;
+
 use crate::stone::Camp::{self, Down, Up};
-use crate::stone::{Stone, self};
+use crate::stone::Stone;
 use crate::stone::StoneType::{Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -194,27 +194,27 @@ impl StoneMap {
 
     #[allow(dead_code)] // 走法生成器
     pub fn generate_stone_steps(&mut self) -> Vec<Step> {
-        let stones = self.get_current_stones();
+        let stones = match self.turn {
+            Up => self.up_stones,
+            Down => self.down_stones
+        };
+
         let mut result : Vec<Step> = Vec::new();
         for stone_index in stones.iter() {
             if let Alive(x, y) = stone_index {
                 // 生成它的走步, 这里我们断言mover一定存在
                 let mover = self.stone_map[*x][*y].unwrap();
                 match mover.stone_type {
-                    // King => self.generate_king_steps((*x, *y), &mut result),
-                    King => todo!(),
-                    Mandarin => todo!(),
-                    Bishop => todo!(),
-                    Knight => todo!(),
-                    Rook => todo!(),
-                    Cannon => todo!(),
-                    Pawn => todo!(),
+                    King => self.generate_king_steps((*x, *y), &mut result),
+                    Mandarin => self.generate_mandarin_steps((*x, *y), &mut result),
+                    Bishop => self.generate_bishop_steps((*x, *y), &mut result),
+                    Knight => self.generate_knight_steps((*x, *y), &mut result),
+                    Rook => self.generate_rook_steps((*x, *y), &mut result),
+                    Cannon => self.generate_cannon_steps((*x, *y), &mut result),
+                    Pawn => self.generate_pawn_steps((*x, *y), &mut result),
                 }
             }
         }
-
-        let step = self.make_step((0, 0), (1, 1));
-        if self.can_move(&step) {}
         result
     }
     
@@ -394,7 +394,61 @@ impl StoneMap {
         self.generate_king_or_pawn_steps(from, result)
     }
     fn generate_mandarin_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        let dx = [ -1,  1,  -1,  1];
+        let dy = [ -1, -1,   1,  1];
 
+        for i in 0..4 {
+            let x : i32 = from.0 as i32 + dx[i];
+            let y : i32 = from.1 as i32 + dy[i];
+
+            if x >= 0 && x <= 9 && y >= 0 && y <= 8 {
+                let step = self.make_step(from, (x as usize, y as usize));
+                if self.can_move(&step) {
+                    result.push(step);
+                }
+            }
+        }
+    }
+    fn generate_bishop_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        let dx = [ -2,  2,  -2,  2];
+        let dy = [ -2, -2,   2,  2];
+
+        for i in 0..4 {
+            let x : i32 = from.0 as i32 + dx[i];
+            let y : i32 = from.1 as i32 + dy[i];
+
+            if x >= 0 && x <= 9 && y >= 0 && y <= 8 {
+                let step = self.make_step(from, (x as usize, y as usize));
+                if self.can_move(&step) {
+                    result.push(step);
+                }
+            }
+        }
+    }
+    fn generate_knight_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        let dx = [ -1, -1,   1,  1, -2, -2,  2,  2];
+        let dy = [ -2,  2,  -2,  2, -1,  1, -1, -1];
+
+        for i in 0..8 {
+            let x : i32 = from.0 as i32 + dx[i];
+            let y : i32 = from.1 as i32 + dy[i];
+
+            if x >= 0 && x <= 9 && y >= 0 && y <= 8 {
+                let step = self.make_step(from, (x as usize, y as usize));
+                if self.can_move(&step) {
+                    result.push(step);
+                }
+            }
+        }
+    }
+    fn generate_rook_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        self.generate_rook_or_cannon_steps(from, result)
+    }
+    fn generate_cannon_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        self.generate_rook_or_cannon_steps(from, result)
+    }
+    fn generate_pawn_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        self.generate_king_or_pawn_steps(from, result)
     }
     fn generate_king_or_pawn_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
         let dx = [1, -1,  0,  0,];
@@ -410,6 +464,16 @@ impl StoneMap {
                     result.push(step);
                 }
             }
+        }
+    }
+    fn generate_rook_or_cannon_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        for x in 0..10 {
+            let step = self.make_step(from, (x, from.1));
+            if self.can_move(&step) { result.push(step); }
+        }
+        for y in 0..9 {
+            let step = self.make_step(from, (from.0, y));
+            if self.can_move(&step) { result.push(step); }
         }
     }
 }
