@@ -58,7 +58,7 @@ fn main() {
                     stone_map.revoke_move(&step);
                     stone_map.switch_turn();
                 }
-            } else {
+            } else if stone_map.turn == Camp::Down {
                 match parse_step(&mut stone_map, input_str) {
                     Ok(step) => {
                         stone_map.make_move(&step);
@@ -70,7 +70,15 @@ fn main() {
                     }
                 }
             }
-
+            else {
+                println!("AI思考中.");
+                let mut player = ComputerPlayer::new(stone_map.clone(), 4);
+                let step = player.play();
+                stone_map.make_move(&step);
+                stone_map.switch_turn();
+            }
+            
+            
             print!("{}", stone_map);
             if let StoneIndex::Dead = stone_map.up_stones[4] {
                 game_over = true;
@@ -79,20 +87,6 @@ fn main() {
                 game_over = true;
                 println!("黑方获胜!");
             } else {
-                println!(
-                    "轮到{}",
-                    match stone_map.turn {
-                        Camp::Up => "黑方".bright_white(),
-                        Camp::Down => "红方".red(),
-                    }
-                );
-
-                println!("AI思考中.");
-                let mut player = ComputerPlayer::new(stone_map.clone(), 4);
-                let step = player.play();
-                stone_map.make_move(&step);
-                stone_map.switch_turn();
-                print!("{}", stone_map);
                 println!(
                     "轮到{}",
                     match stone_map.turn {

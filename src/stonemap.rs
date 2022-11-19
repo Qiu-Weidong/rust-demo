@@ -508,7 +508,7 @@ impl Display for StoneMap {
                     };
                 } else {
                     // 输出一个空格
-                    let c = if i == 4 || i == 5 { '－' } else { '　' };
+                    let c = if i == 4 || i == 5 { '－' } else { /*'　' */ '＋' };
                     write!(f, "{}", c)?;
                 }
             }
