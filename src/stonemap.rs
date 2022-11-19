@@ -1,6 +1,7 @@
 use colored::Colorize;
 use std::fmt::Display;
 
+use crate::step_parser;
 use crate::stone::Camp::{self, Down, Up};
 use crate::stone::{Stone, self};
 use crate::stone::StoneType::{Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
@@ -200,7 +201,8 @@ impl StoneMap {
                 // 生成它的走步, 这里我们断言mover一定存在
                 let mover = self.stone_map[*x][*y].unwrap();
                 match mover.stone_type {
-                    King => self.generate_king_steps((*x, *y), &mut result),
+                    // King => self.generate_king_steps((*x, *y), &mut result),
+                    King => todo!(),
                     Mandarin => todo!(),
                     Bishop => todo!(),
                     Knight => todo!(),
@@ -210,6 +212,9 @@ impl StoneMap {
                 }
             }
         }
+
+        let step = self.make_step((0, 0), (1, 1));
+        if self.can_move(&step) {}
         result
     }
     
@@ -385,14 +390,27 @@ impl StoneMap {
 
 
     // 走法生成器
-    fn generate_king_steps(&self, from: (usize, usize), result: &mut Vec<Step>) {
+    fn generate_king_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
         self.generate_king_or_pawn_steps(from, result)
     }
-    fn generate_mandarin_steps(&self, from: (usize, usize), result: &mut Vec<Step>) {
+    fn generate_mandarin_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
 
     }
-    fn generate_king_or_pawn_steps(&self, from: (usize, usize), result: &mut Vec<Step>) {
+    fn generate_king_or_pawn_steps(&mut self, from: (usize, usize), result: &mut Vec<Step>) {
+        let dx = [1, -1,  0,  0,];
+        let dy = [0,  0,  1, -1,];
 
+        for i in 0..4 {
+            let x : i32 = from.0 as i32 + dx[i];
+            let y : i32 = from.1 as i32 + dy[i];
+
+            if x >= 0 && x <= 9 && y >= 0 && y <= 8 {
+                let step = self.make_step(from, (x as usize, y as usize));
+                if self.can_move(&step) {
+                    result.push(step);
+                }
+            }
+        }
     }
 }
 

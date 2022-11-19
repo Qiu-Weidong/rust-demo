@@ -1,9 +1,9 @@
-use core::num;
+// use core::num;
 
 use crate::step::Step;
 use crate::stone::Camp::Down;
 use crate::stone::Camp::Up;
-use crate::stone::StoneType::{Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
+//use crate::stone::StoneType::{Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
 use crate::stonemap::{StoneIndex, StoneMap};
 use StoneIndex::Alive;
 
@@ -35,6 +35,7 @@ pub fn parse_step(map: &mut StoneMap, input: &str) -> Result<Step, String> {
         Err(String::from("非法走步."))
     }
 }
+/* 
 #[allow(dead_code)]
 pub fn describe_step(map: &mut StoneMap, step: &Step) -> Result<String, String> {
     if !map.can_move(step) {
@@ -96,7 +97,7 @@ fn describe_cannon_step(map: &StoneMap, step: &Step) -> Result<String, String> {
 fn describe_pawn_step(map: &StoneMap, step: &Step) -> Result<String, String> {
     todo!()
 }
-
+*/
 // 解析走步的函数
 fn get_location(map: &StoneMap, input: &[char]) -> Result<(usize, usize), String> {
     match input[0] {
@@ -461,20 +462,20 @@ fn char_to_number(c: char) -> Result<usize, String> {
         _ => Err(format!("无法将字符 `{}` 解析为数字 1..9 .", c)),
     }
 }
-fn number_to_char(x: usize) -> Result<char, String> {
-    match x {
-        1 => Ok('一'),
-        2 => Ok('二'),
-        3 => Ok('三'),
-        4 => Ok('四'),
-        5 => Ok('五'),
-        6 => Ok('六'),
-        7 => Ok('七'),
-        8 => Ok('八'),
-        9 => Ok('九'),
-        _ => Err(format!("无法将数字 `{}` 转换为字符", x)),
-    }
-}
+// fn number_to_char(x: usize) -> Result<char, String> {
+//     match x {
+//         1 => Ok('一'),
+//         2 => Ok('二'),
+//         3 => Ok('三'),
+//         4 => Ok('四'),
+//         5 => Ok('五'),
+//         6 => Ok('六'),
+//         7 => Ok('七'),
+//         8 => Ok('八'),
+//         9 => Ok('九'),
+//         _ => Err(format!("无法将数字 `{}` 转换为字符", x)),
+//     }
+// }
 // 獲取 士、相、馬、車、炮 的位置
 fn get_two_location(
     map: &StoneMap,
