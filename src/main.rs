@@ -1,8 +1,10 @@
-pub mod stone;
+mod stone;
 mod stonemap;
-pub mod step;
+mod step;
+mod step_parser;
 
 use stonemap::StoneMap;
+use step_parser::parse_step;
 
 fn main() {
     let mut stone_map = StoneMap::new();
@@ -23,7 +25,7 @@ fn main() {
             _ => {}
         };
 
-        match stone_map.parse_step(input_str) {
+        match parse_step(&mut stone_map, input_str) {
             Ok(step) => {
                 stone_map.make_move(&step);
                 stone_map.switch_turn();
