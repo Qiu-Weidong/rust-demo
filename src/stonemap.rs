@@ -2,8 +2,8 @@ use colored::Colorize;
 use std::fmt::Display;
 
 use crate::stone::Camp::{self, Down, Up};
-use crate::stone::Stone;
-use crate::stone::StoneType::{self, Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
+use crate::stone::{Stone, self};
+use crate::stone::StoneType::{Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum StoneIndex {
@@ -165,6 +165,7 @@ impl StoneMap {
         }
 
         let mover = mover.unwrap();
+        if mover.camp != self.turn { return false; }
         if let Some(killed) = step.killed {
             if killed.camp == mover.camp {
                 return false;
@@ -192,7 +193,24 @@ impl StoneMap {
 
     #[allow(dead_code)] // 走法生成器
     pub fn generate_stone_steps(&mut self) -> Vec<Step> {
-        todo!()
+        let stones = self.get_current_stones();
+        let mut result : Vec<Step> = Vec::new();
+        for stone_index in stones.iter() {
+            if let Alive(x, y) = stone_index {
+                // 生成它的走步, 这里我们断言mover一定存在
+                let mover = self.stone_map[*x][*y].unwrap();
+                match mover.stone_type {
+                    King => self.generate_king_steps((*x, *y), &mut result),
+                    Mandarin => todo!(),
+                    Bishop => todo!(),
+                    Knight => todo!(),
+                    Rook => todo!(),
+                    Cannon => todo!(),
+                    Pawn => todo!(),
+                }
+            }
+        }
+        result
     }
     
     pub fn make_step(&self, from: (usize, usize), to: (usize, usize)) -> Step {
@@ -365,6 +383,17 @@ impl StoneMap {
         }
     }
 
+
+    // 走法生成器
+    fn generate_king_steps(&self, from: (usize, usize), result: &mut Vec<Step>) {
+        self.generate_king_or_pawn_steps(from, result)
+    }
+    fn generate_mandarin_steps(&self, from: (usize, usize), result: &mut Vec<Step>) {
+
+    }
+    fn generate_king_or_pawn_steps(&self, from: (usize, usize), result: &mut Vec<Step>) {
+
+    }
 }
 
 // 輸出棋盤
@@ -377,36 +406,10 @@ impl Display for StoneMap {
             write!(f, "｜")?;
             for j in 0..9 {
                 if let Some(stone) = self.stone_map[i][j] {
-                    (match stone.stone_type {
-                        StoneType::King => match stone.camp {
-                            Camp::Up => write!(f, "{}", "將".bright_white()),
-                            Camp::Down => write!(f, "{}", "帥".bright_red()),
-                        },
-                        StoneType::Mandarin => match stone.camp {
-                            Camp::Up => write!(f, "{}", "士".bright_white()),
-                            Camp::Down => write!(f, "{}", "仕".bright_red()),
-                        },
-                        StoneType::Bishop => match stone.camp {
-                            Camp::Up => write!(f, "{}", "象".bright_white()),
-                            Camp::Down => write!(f, "{}", "相".bright_red()),
-                        },
-                        StoneType::Knight => match stone.camp {
-                            Camp::Up => write!(f, "{}", "馬".bright_white()),
-                            Camp::Down => write!(f, "{}", "傌".bright_red()),
-                        },
-                        StoneType::Rook => match stone.camp {
-                            Camp::Up => write!(f, "{}", "車".bright_white()),
-                            Camp::Down => write!(f, "{}", "俥".bright_red()),
-                        },
-                        StoneType::Cannon => match stone.camp {
-                            Camp::Up => write!(f, "{}", "砲".bright_white()),
-                            Camp::Down => write!(f, "{}", "炮".bright_red()),
-                        },
-                        StoneType::Pawn => match stone.camp {
-                            Camp::Up => write!(f, "{}", "卒".bright_white()),
-                            Camp::Down => write!(f, "{}", "兵".bright_red()),
-                        },
-                    })?;
+                    match stone.camp {
+                        Camp::Up => write!(f, "{}", stone.get_char().to_string().bright_black())?,
+                        Camp::Down => write!(f, "{}", stone.get_char().to_string().red())?,
+                    };
                 } else {
                     // 输出一个空格
                     let c = if i == 4 || i == 5 { '－' } else { '　' };
@@ -419,14 +422,6 @@ impl Display for StoneMap {
         writeln!(f, "　￣￣￣￣￣￣￣￣￣　")?;
         writeln!(f, "　９８７６５４３２１　")?;
 
-        // writeln!(
-        //     f,
-        //     "轮到{}",
-        //     match self.turn {
-        //         Up => "黑方".bright_white(),
-        //         Down => "红方".red(),
-        //     }
-        // )?;
         Ok(())
     }
 }

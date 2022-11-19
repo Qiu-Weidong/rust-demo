@@ -1,7 +1,10 @@
+use core::num;
+
+use crate::step::Step;
 use crate::stone::Camp::Down;
 use crate::stone::Camp::Up;
-use crate::stonemap::{StoneMap, StoneIndex};
-use crate::step::Step;
+use crate::stone::StoneType::{Bishop, Cannon, King, Knight, Mandarin, Pawn, Rook};
+use crate::stonemap::{StoneIndex, StoneMap};
 use StoneIndex::Alive;
 
 pub fn parse_step(map: &mut StoneMap, input: &str) -> Result<Step, String> {
@@ -32,6 +35,67 @@ pub fn parse_step(map: &mut StoneMap, input: &str) -> Result<Step, String> {
         Err(String::from("非法走步."))
     }
 }
+#[allow(dead_code)]
+pub fn describe_step(map: &mut StoneMap, step: &Step) -> Result<String, String> {
+    if !map.can_move(step) {
+        Err(String::from("非法走步."))
+    } else {
+        let mover = map.stone_map[step.from.0][step.from.1].unwrap(); // 一定有mover
+        match mover.stone_type {
+            King => describe_king_step(map, step),
+            Mandarin => describe_mandarin_step(map, step),
+            Bishop => describe_bishop_step(map, step),
+            Knight => describe_knight_step(map, step),
+            Rook => describe_rook_step(map, step),
+            Cannon => describe_cannon_step(map, step),
+            Pawn => describe_pawn_step(map, step),
+        }
+    }
+}
+
+fn describe_king_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    let mover = map.stone_map[step.from.0][step.from.1].unwrap();
+    let stones = match mover.camp {
+        Up => &map.up_stones,
+        Down => &map.down_stones,
+    };
+    let col = step.from.1;
+    let col = match mover.camp {
+        Up => col + 1,
+        Down => 9 - col,
+    };
+
+    let op: char = if step.from.0 == step.to.0 {
+        '平'
+    } else if step.from.1 < step.to.1 && mover.camp == Up
+        || step.from.1 > step.to.1 && mover.camp == Down
+    {
+        '進'
+    } else {
+        '退'
+    };
+    let chars = [mover.get_char(), number_to_char(col)?, op];
+    let ret: String = chars.iter().collect();
+    Ok(ret)
+}
+fn describe_mandarin_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    todo!()
+}
+fn describe_bishop_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    todo!()
+}
+fn describe_knight_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    todo!()
+}
+fn describe_rook_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    todo!()
+}
+fn describe_cannon_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    todo!()
+}
+fn describe_pawn_step(map: &StoneMap, step: &Step) -> Result<String, String> {
+    todo!()
+}
 
 // 解析走步的函数
 fn get_location(map: &StoneMap, input: &[char]) -> Result<(usize, usize), String> {
@@ -43,8 +107,8 @@ fn get_location(map: &StoneMap, input: &[char]) -> Result<(usize, usize), String
         '士' | '仕' => get_mandarin_location(map, input),
         '象' | '相' => get_bishop_location(map, input),
         '馬' | '傌' | '马' | '㐷' => get_knight_location(map, input),
-        '前' | '后' | '後' | '中' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
-        | '四' | '肆' | '4' | '４' => match input[1] {
+        '前' | '后' | '後' | '中' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３' | '四'
+        | '肆' | '4' | '４' => match input[1] {
             '车' | '伡' | '車' | '俥' => get_rook_location(map, input),
             '炮' | '砲' => get_cannon_location(map, input),
             '兵' | '卒' => get_pawn_location(map, input),
@@ -52,9 +116,10 @@ fn get_location(map: &StoneMap, input: &[char]) -> Result<(usize, usize), String
             '象' | '相' => get_bishop_location(map, input),
             '馬' | '傌' | '马' | '㐷' => get_knight_location(map, input),
             '一' | '壹' | '1' | '１' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
-            | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6'
-            | '６' | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖'
-            | '9' | '９' => get_pawn_location(map, input),
+            | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6' | '６'
+            | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖' | '9' | '９' => {
+                get_pawn_location(map, input)
+            }
             _ => Err(format!("未知棋子 `{}`", input[1])),
         },
         _ => Err(format!("未知棋子 `{}`", input[0])),
@@ -161,9 +226,9 @@ fn get_pawn_location(map: &StoneMap, input: &[char]) -> Result<(usize, usize), S
                 }
             }
             '一' | '壹' | '1' | '１' | '二' | '贰' | '2' | '２' | '三' | '叁' | '3' | '３'
-            | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6'
-            | '６' | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖'
-            | '9' | '９' => {
+            | '四' | '肆' | '4' | '４' | '五' | '伍' | '5' | '５' | '六' | '陆' | '6' | '６'
+            | '七' | '柒' | '7' | '７' | '八' | '捌' | '8' | '８' | '九' | '玖' | '9' | '９' =>
+            {
                 // [前后後二三四]三进一
                 let col = char_to_number(input[1])?;
                 // col要作處理
@@ -241,7 +306,11 @@ fn get_pawn_location(map: &StoneMap, input: &[char]) -> Result<(usize, usize), S
     }
 }
 
-fn get_dest(map: &StoneMap, input: &[char], from: (usize, usize)) -> Result<(usize, usize), String> {
+fn get_dest(
+    map: &StoneMap,
+    input: &[char],
+    from: (usize, usize),
+) -> Result<(usize, usize), String> {
     let (dest_x, dest_y) = match input[0] {
         '兵' | '卒' | '车' | '伡' | '車' | '俥' | '炮' | '砲' | '将' | '帅' | '將' | '帥'
         | '王' => parse_straight_dest(map, input, from)?,
@@ -332,7 +401,9 @@ fn parse_bishop_dest(
     };
 
     let dest = (from.1 as i32 - line as i32) * (from.1 as i32 - line as i32);
-    if dest != 4 { return Err(format!("")); }
+    if dest != 4 {
+        return Err(format!(""));
+    }
 
     match input[2] {
         '進' | '进' => match map.turn {
@@ -358,7 +429,9 @@ fn parse_mandarin_dest(
     };
 
     let dest = (from.1 as i32 - line as i32) * (from.1 as i32 - line as i32);
-    if dest != 1 { return Err(format!("")); }
+    if dest != 1 {
+        return Err(format!(""));
+    }
 
     match input[2] {
         '進' | '进' => match map.turn {
@@ -388,7 +461,20 @@ fn char_to_number(c: char) -> Result<usize, String> {
         _ => Err(format!("无法将字符 `{}` 解析为数字 1..9 .", c)),
     }
 }
-
+fn number_to_char(x: usize) -> Result<char, String> {
+    match x {
+        1 => Ok('一'),
+        2 => Ok('二'),
+        3 => Ok('三'),
+        4 => Ok('四'),
+        5 => Ok('五'),
+        6 => Ok('六'),
+        7 => Ok('七'),
+        8 => Ok('八'),
+        9 => Ok('九'),
+        _ => Err(format!("无法将数字 `{}` 转换为字符", x)),
+    }
+}
 // 獲取 士、相、馬、車、炮 的位置
 fn get_two_location(
     map: &StoneMap,
