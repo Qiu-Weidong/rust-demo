@@ -48,6 +48,7 @@ fn main() {
             _ => {}
         };
 
+
         if !game_over {
             if input_str == "regret" {
                 if steps.len() <= 0 {
@@ -91,6 +92,14 @@ fn main() {
                 let step = player.play();
                 stone_map.make_move(&step);
                 stone_map.switch_turn();
+                print!("{}", stone_map);
+                println!(
+                    "轮到{}",
+                    match stone_map.turn {
+                        Camp::Up => "黑方".bright_white(),
+                        Camp::Down => "红方".red(),
+                    }
+                );
             }
         }
         else {
